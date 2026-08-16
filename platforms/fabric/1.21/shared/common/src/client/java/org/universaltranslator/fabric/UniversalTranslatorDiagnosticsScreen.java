@@ -39,20 +39,20 @@ final class UniversalTranslatorDiagnosticsScreen extends Screen {
         context.fill(0, 0, width, height, 0xE510151C);
         context.fill(Math.max(5, width / 2 - 190), 8,
                 Math.min(width - 5, width / 2 + 190), height - 34, 0xD51A232E);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFFFF);
         List<String> lines = safeLines();
         int left = Math.max(10, (width - Math.min(360, width - 20)) / 2);
         int y = 43;
         for (String line : lines) {
-            context.drawTextWithShadow(textRenderer, Text.literal(line), left, y, 0xD0D0D0);
+            context.drawTextWithShadow(textRenderer, Text.literal(line), left, y, 0xFFD0D0D0);
             y += 17;
         }
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.translatable("screen.universal_translator.diagnostics.note"),
-                width / 2, Math.min(y + 7, height - 58), 0x909090);
+                width / 2, Math.min(y + 7, height - 58), 0xFF909090);
         if (!exportStatus.isEmpty()) {
             context.drawCenteredTextWithShadow(textRenderer, Text.literal(exportStatus),
-                    width / 2, height - 43, exportFailed ? 0xFF5555 : 0x55FF88);
+                    width / 2, height - 43, exportFailed ? 0xFFFF5555 : 0xFF55FF88);
         }
         super.render(context, mouseX, mouseY, delta);
     }

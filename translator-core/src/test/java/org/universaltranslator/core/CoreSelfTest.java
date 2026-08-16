@@ -702,7 +702,7 @@ public final class CoreSelfTest {
 
     private static void keepsSettingsActionsReachable() {
         int[] widths = new int[] {160, 180, 320, 854};
-        int[] heights = new int[] {160, 180, 200, 220, 240, 360};
+        int[] heights = new int[] {160, 180, 200, 220, 240, 252, 256, 260, 268, 300, 320, 360};
         for (int width : widths) {
             for (int height : heights) {
                 SettingsScreenLayout.Geometry layout = SettingsScreenLayout.calculate(width, height);
@@ -711,6 +711,9 @@ public final class CoreSelfTest {
                 assertTrue(layout.saveY() >= 0);
                 assertTrue(layout.saveY() + SettingsScreenLayout.BUTTON_HEIGHT <= height);
                 assertTrue(layout.endpointY() + SettingsScreenLayout.BUTTON_HEIGHT <= layout.saveY());
+                if (height >= 252) {
+                    assertTrue(layout.top() >= SettingsScreenLayout.HEADER_BOTTOM + 2);
+                }
             }
         }
     }

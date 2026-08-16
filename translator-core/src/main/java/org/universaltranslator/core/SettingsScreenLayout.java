@@ -3,6 +3,8 @@ package org.universaltranslator.core;
 /** Shared responsive geometry for the platform settings screens. */
 public final class SettingsScreenLayout {
     public static final int BUTTON_HEIGHT = 20;
+    public static final int HEADER_BOTTOM = 34;
+    public static final int COMPACT_STATUS_Y = 6;
 
     private SettingsScreenLayout() {
     }
@@ -17,8 +19,13 @@ public final class SettingsScreenLayout {
         int buttonWidth = Math.max(16, (totalWidth - gap) / 2);
         int left = Math.max(0, (safeWidth - totalWidth) / 2);
 
-        int top = Math.max(20, Math.min(44, 20 + Math.max(0, screenHeight - 220) / 4));
-        int rowStep = screenHeight >= 300 ? 26 : (screenHeight >= 260 ? 22 : 20);
+        // At the compact 256px-high GUI scale the former top value was 29, so the
+        // animated header divider at y=32..33 crossed the first row of controls.
+        // Screens tall enough to fit the complete form now reserve the header first.
+        int minimumTop = screenHeight >= 252 ? HEADER_BOTTOM + 2 : 20;
+        int top = Math.max(minimumTop,
+                Math.min(44, 20 + Math.max(0, screenHeight - 220) / 4));
+        int rowStep = screenHeight >= 300 ? 26 : (screenHeight >= 268 ? 22 : 20);
         int targetY = top + rowStep * 7 + 2;
         int endpointY = targetY + (screenHeight >= 300 ? 32 : 28);
         int saveY = screenHeight >= 330

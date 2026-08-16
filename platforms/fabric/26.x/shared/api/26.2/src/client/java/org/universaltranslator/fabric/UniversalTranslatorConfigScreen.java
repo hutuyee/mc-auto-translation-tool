@@ -324,20 +324,11 @@ final class UniversalTranslatorConfigScreen extends Screen {
         }
         graphics.centeredText(this.font, this.title, this.width / 2, 18,
                 animatedUi ? SettingsUiAnimation.pulseColor(now) : 0xFFFFFFFF);
-        int left = layout.left;
-        graphics.text(this.font, Component.translatable("screen.universal_translator.target_language_hint"),
-                left, layout.targetY - 11, 0xFFA0A0A0);
-        graphics.text(this.font,
-                Component.translatable("screen.universal_translator.endpoint_hint"),
-                left, layout.endpointY - 11, 0xFFA0A0A0);
-        graphics.text(this.font,
-                Component.translatable("screen.universal_translator.outgoing_target_hint"),
-                layout.right, layout.endpointY - 11, 0xFFA0A0A0);
         String rawRuntimeStatus = FabricTranslationRuntime.status();
         String runtimeStatus = TranslationStatusLocalizer.localize(rawRuntimeStatus,
                 UniversalTranslatorConfigScreen::tr);
         int belowSave = layout.saveY + 28;
-        int messageY = belowSave <= this.height - 10 ? belowSave : layout.saveY - 14;
+        int messageY = belowSave <= this.height - 10 ? belowSave : SettingsScreenLayout.COMPACT_STATUS_Y;
         if (!status.isEmpty()) {
             graphics.centeredText(this.font, Component.literal(status),
                     this.width / 2, messageY, 0xFFFF5555);

@@ -366,24 +366,11 @@ final class UniversalTranslatorConfigScreen extends Screen {
         drawCenteredString(renderer, tr("screen.universal_translator.settings.title"),
                 width / 2, 18,
                 animatedUi ? SettingsUiAnimation.pulseColor(now) : 0xFFFFFFFF);
-        int left = layout.left;
-        drawString(renderer, tr("screen.universal_translator.target_language_hint"),
-                left, layout.targetY - 11, 0xFFA0A0A0);
-        drawString(renderer, tr("screen.universal_translator.endpoint_hint"),
-                left, layout.endpointY - 11, 0xFFA0A0A0);
-        drawString(renderer, tr("screen.universal_translator.outgoing_target_hint"),
-                layout.right, layout.endpointY - 11, 0xFFA0A0A0);
-        endpoint.render(mouseX, mouseY, partialTicks);
-        blockedKeywords.render(mouseX, mouseY, partialTicks);
-        if (blockedKeywords.getText().isEmpty() && !blockedKeywords.isFocused()) {
-            drawString(renderer, tr("screen.universal_translator.blocked_keywords_hint"),
-                    layout.right + 4, layout.row(5) + 6, 0xFF808080);
-        }
         String rawRuntimeStatus = FabricTranslationRuntime.status();
         String runtimeStatus = TranslationStatusLocalizer.localize(rawRuntimeStatus,
                 UniversalTranslatorConfigScreen::tr);
         int belowSave = layout.saveY + 28;
-        int messageY = belowSave <= height - 10 ? belowSave : layout.saveY - 14;
+        int messageY = belowSave <= height - 10 ? belowSave : SettingsScreenLayout.COMPACT_STATUS_Y;
         if (!status.isEmpty()) {
             drawCenteredString(renderer, status, width / 2, messageY, 0xFFFF5555);
         } else if (!runtimeStatus.isEmpty()) {

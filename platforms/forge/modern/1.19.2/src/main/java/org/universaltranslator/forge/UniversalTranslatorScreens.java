@@ -278,17 +278,11 @@ abstract class UniversalTranslatorConfigScreenBase extends Screen {
         }
         graphics.centered(title, width / 2, 18,
                 animatedUi ? SettingsUiAnimation.pulseColor(now) : 0xFFFFFFFF);
-        graphics.text(Component.translatable("screen.universal_translator.target_language_hint"),
-                layout.left, layout.targetY - 11, 0xFFA0A0A0);
-        graphics.text(Component.translatable("screen.universal_translator.endpoint_hint"),
-                layout.left, layout.endpointY - 11, 0xFFA0A0A0);
-        graphics.text(Component.translatable("screen.universal_translator.outgoing_target_hint"),
-                layout.right, layout.endpointY - 11, 0xFFA0A0A0);
         String rawStatus = ForgeTranslationRuntime.status();
         String localized = TranslationStatusLocalizer.localize(rawStatus,
                 UniversalTranslatorConfigScreenBase::tr);
         int belowSave = layout.saveY + 28;
-        int messageY = belowSave <= height - 10 ? belowSave : layout.saveY - 14;
+        int messageY = belowSave <= height - 10 ? belowSave : SettingsScreenLayout.COMPACT_STATUS_Y;
         if (!status.isEmpty()) {
             graphics.centered(Component.literal(status), width / 2, messageY, 0xFFFF5555);
         } else if (!localized.isEmpty()) {

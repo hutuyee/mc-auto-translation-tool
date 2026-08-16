@@ -38,20 +38,20 @@ final class UniversalTranslatorDiagnosticsScreen extends Screen {
         fill(matrices, 0, 0, width, height, 0xE510151C);
         fill(matrices, Math.max(5, width / 2 - 190), 8,
                 Math.min(width - 5, width / 2 + 190), height - 34, 0xD51A232E);
-        drawCenteredText(matrices, textRenderer, title, width / 2, 18, 0xFFFFFF);
+        drawCenteredText(matrices, textRenderer, title, width / 2, 18, 0xFFFFFFFF);
         List<String> lines = safeLines();
         int left = Math.max(10, (width - Math.min(360, width - 20)) / 2);
         int y = 43;
         for (String line : lines) {
-            drawTextWithShadow(matrices, textRenderer, Text.literal(line), left, y, 0xD0D0D0);
+            drawTextWithShadow(matrices, textRenderer, Text.literal(line), left, y, 0xFFD0D0D0);
             y += 17;
         }
         drawCenteredText(matrices, textRenderer,
                 Text.translatable("screen.universal_translator.diagnostics.note"),
-                width / 2, Math.min(y + 7, height - 58), 0x909090);
+                width / 2, Math.min(y + 7, height - 58), 0xFF909090);
         if (!exportStatus.isEmpty()) {
             drawCenteredText(matrices, textRenderer, Text.literal(exportStatus),
-                    width / 2, height - 43, exportFailed ? 0xFF5555 : 0x55FF88);
+                    width / 2, height - 43, exportFailed ? 0xFFFF5555 : 0xFF55FF88);
         }
         super.render(matrices, mouseX, mouseY, delta);
     }

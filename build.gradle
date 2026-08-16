@@ -201,6 +201,60 @@ tasks.register("validateOpaqueSelectionTextColors") {
     }
 }
 
+tasks.register("validateNonOverlappingSettingsLabels") {
+    group = "verification"
+    description = "Prevents settings labels and compact status text from overlapping controls."
+
+    doLast {
+        def settingsScreens = fileTree("platforms") {
+            include "**/UniversalTranslatorConfigScreen.java"
+            include "**/UniversalTranslatorScreens.java"
+            include "**/LegacyConfigScreen.java"
+        }.files.findAll { source ->
+            source.getText("UTF-8").contains("SettingsUiAnimation.openProgress")
+        }
+        def overlappingPositions = [
+                "layout.targetY - 11",
+                "layout.endpointY - 11",
+                "layout.saveY - 14"
+        ]
+        def violations = settingsScreens.findAll { source ->
+            def text = source.getText("UTF-8")
+            overlappingPositions.any { text.contains(it) }
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                    "Custom settings screens must not draw labels in the inter-row control area:\n" +
+                            violations.collect { relativePath(it) }.sort().join("\n")
+            )
+        }
+    }
+}
+
+tasks.register("validateOpaqueDiagnosticsTextColors") {
+    group = "verification"
+    description = "Rejects transparent six-digit RGB colors in custom diagnostics text."
+
+    doLast {
+        def transparentRgb = ~/0x[0-9A-Fa-f]{6}\b/
+        def violations = fileTree("platforms") {
+            include "**/*DiagnosticsScreen.java"
+            include "**/UniversalTranslatorScreens.java"
+        }.files.findAll { source ->
+            def text = source.getText("UTF-8")
+            text.contains("diagnostics.note") && transparentRgb.matcher(text).find()
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                    "Custom diagnostics screens must use explicit 0xAARRGGBB text colors:\n" +
+                            violations.collect { relativePath(it) }.sort().join("\n")
+            )
+        }
+    }
+}
+
 def releaseDirectory = file("downloads/${project.mod_version}")
 def releaseArtifacts = fileTree(releaseDirectory) {
     include "*.jar", "*.jar.part-*"
@@ -291,6 +345,8 @@ tasks.register("verifyPreparedReleaseAssets", Exec) {
 tasks.named("check") {
     dependsOn(
             "validateMixinConfigs",
+            "validateNonOverlappingSettingsLabels",
+            "validateOpaqueDiagnosticsTextColors",
             "validateOpaqueSelectionTextColors",
             "validateSharedPlatformLayouts",
             "verifyPreparedReleaseAssets"
