@@ -178,6 +178,29 @@ tasks.register("validateSharedPlatformLayouts") {
     }
 }
 
+tasks.register("validateOpaqueSelectionTextColors") {
+    group = "verification"
+    description = "Rejects transparent six-digit RGB colors in custom settings selection text."
+
+    doLast {
+        def transparentRgb = ~/0x[0-9A-Fa-f]{6}\b/
+        def violations = fileTree("platforms") {
+            include "**/UniversalTranslatorConfigScreen.java"
+            include "**/UniversalTranslatorScreens.java"
+        }.files.findAll { source ->
+            def text = source.getText("UTF-8")
+            text.contains("SettingsSelectionList.displayName") && transparentRgb.matcher(text).find()
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                    "Custom selection screens must use explicit 0xAARRGGBB text colors:\n" +
+                            violations.collect { relativePath(it) }.sort().join("\n")
+            )
+        }
+    }
+}
+
 def releaseDirectory = file("downloads/${project.mod_version}")
 def releaseArtifacts = fileTree(releaseDirectory) {
     include "*.jar", "*.jar.part-*"
@@ -268,6 +291,7 @@ tasks.register("verifyPreparedReleaseAssets", Exec) {
 tasks.named("check") {
     dependsOn(
             "validateMixinConfigs",
+            "validateOpaqueSelectionTextColors",
             "validateSharedPlatformLayouts",
             "verifyPreparedReleaseAssets"
     )

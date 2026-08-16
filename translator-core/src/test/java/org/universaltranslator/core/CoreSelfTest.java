@@ -62,7 +62,13 @@ public final class CoreSelfTest {
         discardsResultsBlockedWhileInFlight();
         separatesCacheEntriesByTextKind();
         prefersChinaDownloadSources();
+        selectsAndroidOfflineRuntime();
         configuresWindowsOfflineRuntimePath();
+        preparesAsciiWindowsModelPath();
+        animatesSettingsUiDeterministically();
+        laysOutInPlaceSettingsLists();
+        keepsSettingsActionsReachable();
+        exportsSecretFreeDiagnostics();
         reportsOfflineStartupDiagnostics();
         matchesTencentCloudOfficialSignatureVector();
         keepsOriginalTextInBilingualMode();
@@ -292,6 +298,16 @@ public final class CoreSelfTest {
             output.closeEntry();
         }
         assertThrows(() -> SafeArchiveExtractor.extract(unsafeZip, directory.resolve("unsafe-output")));
+
+        Path excessiveEntriesZip = directory.resolve("excessive-entries.zip");
+        try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(excessiveEntriesZip))) {
+            for (int index = 0; index <= 10_000; index++) {
+                output.putNextEntry(new ZipEntry("entry-" + index + "/"));
+                output.closeEntry();
+            }
+        }
+        assertThrows(() -> SafeArchiveExtractor.extract(
+                excessiveEntriesZip, directory.resolve("excessive-entries-output")));
     }
 
     private static void writeTarEntry(OutputStream output, String name, byte[] data) throws Exception {
@@ -586,6 +602,131 @@ public final class CoreSelfTest {
                 + File.pathSeparator + javaBin.toAbsolutePath().normalize().toString()
                 + File.pathSeparator;
         assertTrue(builder.environment().get("PATH").startsWith(expectedPrefix));
+
+        ProcessBuilder androidBuilder = new ProcessBuilder("offline-test");
+        androidBuilder.environment().put("LD_LIBRARY_PATH", "existing-library-path");
+        OfflineProcessSupport.prependEnvironmentPath(
+                androidBuilder, "LD_LIBRARY_PATH", server);
+        assertTrue(androidBuilder.environment().get("LD_LIBRARY_PATH")
+                .startsWith(server.toAbsolutePath().normalize().toString()
+                        + File.pathSeparator));
+    }
+
+    private static void selectsAndroidOfflineRuntime() {
+        assertTrue(OfflineEngineAsset.isAndroidRuntime(
+                "Linux", "OpenJDK Runtime Environment", "/data/user/0/net.kdt.pojavlaunch", false));
+        assertTrue(OfflineEngineAsset.isAndroidRuntime(
+                "Linux", "OpenJDK Runtime Environment", "/home/player", true));
+        assertFalse(OfflineEngineAsset.isAndroidRuntime(
+                "Linux", "OpenJDK Runtime Environment", "/home/player", false));
+
+        OfflineEngineAsset android = OfflineEngineAsset.select("Linux", "aarch64", true);
+        assertEquals("android-arm64", android.platformId);
+        assertEquals("llama-b9637-bin-android-arm64.tar.gz", android.archiveName);
+        assertEquals(75_515_871L, android.size);
+        assertEquals("66068af2400dbaaadb4dc3e4042d120c6633f115ecd2fe1a8979fb55e0648e4d",
+                android.sha256);
+        assertEquals("linux-arm64",
+                OfflineEngineAsset.select("Linux", "aarch64", false).platformId);
+        assertThrows(() -> OfflineEngineAsset.select("Linux", "x86_64", true));
+
+        assertTrue(OfflineProcessSupport.isAndroidSharedStorage(
+                java.nio.file.Paths.get("/storage/emulated/0/games/PojavLauncher")));
+        assertFalse(OfflineProcessSupport.isAndroidSharedStorage(
+                java.nio.file.Paths.get("/data/user/0/net.kdt.pojavlaunch/cache")));
+    }
+
+    private static void preparesAsciiWindowsModelPath() throws Exception {
+        Path asciiRoot = Files.createTempDirectory("offline-ascii-root");
+        Path unicodeDirectory = Files.createDirectories(asciiRoot.resolve("游戏目录"));
+        Path model = unicodeDirectory.resolve("qwen.gguf");
+        byte[] contents = "verified-model-data".getBytes(StandardCharsets.UTF_8);
+        Files.write(model, contents);
+
+        String modelDigest = org.universaltranslator.core.offline.VerifiedDownloader.sha256(model);
+        Path alias = OfflineProcessSupport.prepareModelPathForNativeProcess(
+                model, modelDigest, true);
+        assertTrue(OfflineProcessSupport.isAsciiPath(alias));
+        assertFalse(alias.equals(model.toAbsolutePath().normalize()));
+        assertTrue(Arrays.equals(contents, Files.readAllBytes(alias)));
+        assertEquals(alias, OfflineProcessSupport.prepareModelPathForNativeProcess(
+                model, modelDigest, true));
+
+        Files.delete(alias);
+        Files.write(alias, "damaged--model-data".getBytes(StandardCharsets.UTF_8));
+        assertEquals(alias, OfflineProcessSupport.prepareModelPathForNativeProcess(
+                model, modelDigest, true));
+        assertTrue(Arrays.equals(contents, Files.readAllBytes(alias)));
+
+        Path alreadyAscii = asciiRoot.resolve("qwen.gguf");
+        Files.write(alreadyAscii, contents);
+        assertEquals(alreadyAscii.toAbsolutePath().normalize(),
+                OfflineProcessSupport.prepareModelPathForNativeProcess(
+                        alreadyAscii, modelDigest, true));
+    }
+
+    private static void animatesSettingsUiDeterministically() {
+        long start = 1_000_000_000L;
+        assertEquals(0.0F, SettingsUiAnimation.openProgress(start, start));
+        assertEquals(1.0F, SettingsUiAnimation.openProgress(
+                start, start + SettingsUiAnimation.OPEN_DURATION_NANOS));
+        float midpoint = SettingsUiAnimation.openProgress(
+                start, start + SettingsUiAnimation.OPEN_DURATION_NANOS / 2L);
+        assertTrue(midpoint > 0.49F && midpoint < 0.51F);
+        assertEquals(150, SettingsUiAnimation.openingOverlayAlpha(0.0F));
+        assertEquals(0, SettingsUiAnimation.openingOverlayAlpha(1.0F));
+        assertEquals(50, SettingsUiAnimation.expandingHalfWidth(100, 0.5F));
+        assertTrue(SettingsUiAnimation.sweepX(10, 110, start) >= 10);
+        assertTrue(SettingsUiAnimation.sweepX(10, 110, start) <= 110);
+        assertEquals(0xFF000000, SettingsUiAnimation.pulseColor(start) & 0xFF000000);
+    }
+
+    private static void laysOutInPlaceSettingsLists() {
+        assertEquals(16, SettingsSelectionList.values(
+                SettingsSelectionList.Kind.PROVIDER).length);
+        assertEquals(10, SettingsSelectionList.values(
+                SettingsSelectionList.Kind.TARGET_LANGUAGE).length);
+        SettingsSelectionList.Layout layout = SettingsSelectionList.layout(320, 240, 16);
+        assertTrue(layout.x(0) < layout.x(1));
+        assertEquals(layout.y(0), layout.y(1));
+        assertTrue(layout.y(2) > layout.y(0));
+        assertTrue(layout.panelBottom < 240);
+        assertEquals(0, layout.optionAt(
+                layout.x(0) + 1, layout.y(0) + 1, 16));
+        assertEquals(1, layout.optionAt(
+                layout.x(1) + 1, layout.y(1) + 1, 16));
+        assertEquals(-1, layout.optionAt(0, 0, 16));
+        assertTrue(layout.contains(layout.panelLeft(), layout.panelTop));
+        assertFalse(layout.contains(0, 0));
+    }
+
+    private static void keepsSettingsActionsReachable() {
+        int[] widths = new int[] {160, 180, 320, 854};
+        int[] heights = new int[] {160, 180, 200, 220, 240, 360};
+        for (int width : widths) {
+            for (int height : heights) {
+                SettingsScreenLayout.Geometry layout = SettingsScreenLayout.calculate(width, height);
+                assertTrue(layout.left() >= 0);
+                assertTrue(layout.right() + layout.buttonWidth() <= width);
+                assertTrue(layout.saveY() >= 0);
+                assertTrue(layout.saveY() + SettingsScreenLayout.BUTTON_HEIGHT <= height);
+                assertTrue(layout.endpointY() + SettingsScreenLayout.BUTTON_HEIGHT <= layout.saveY());
+            }
+        }
+    }
+
+    private static void exportsSecretFreeDiagnostics() throws Exception {
+        Path directory = Files.createTempDirectory("universal-translator-diagnostics-");
+        Path report = DiagnosticsLogExporter.export(directory, java.util.Arrays.asList(
+                "Runtime: failed https://secret.example/translate",
+                "api-key=abc123",
+                "authorization: Bearer private-token"));
+        String output = new String(Files.readAllBytes(report), StandardCharsets.UTF_8);
+        assertTrue(output.contains("MC Auto Translation Tool - Diagnostics"));
+        assertFalse(output.contains("secret.example"));
+        assertFalse(output.contains("abc123"));
+        assertFalse(output.contains("private-token"));
+        assertTrue(output.contains("[address hidden]"));
     }
 
     private static void reportsOfflineStartupDiagnostics() throws Exception {
@@ -610,6 +751,9 @@ public final class CoreSelfTest {
         assertTrue(summary.contains("failed to read magic"));
         assertFalse(summary.contains("cleaning up"));
         assertTrue(OfflineProcessSupport.describeStartupExit(1, summary)
+                .contains("模型文件读取失败"));
+        assertTrue(OfflineProcessSupport.describeStartupExit(1,
+                "common_init_from_params: failed to load model 'C:\\\\bad\\\\qwen.gguf'")
                 .contains("模型文件读取失败"));
 
         java.util.List<String> normal = new java.util.ArrayList<String>();

@@ -13,6 +13,9 @@ import org.universaltranslator.core.TargetLanguage;
 import org.universaltranslator.core.TranslationStatusLocalizer;
 import org.universaltranslator.core.TranslationTextColor;
 import org.universaltranslator.core.TranslationProviderCatalog;
+import org.universaltranslator.core.SettingsUiAnimation;
+import org.universaltranslator.core.SettingsScreenLayout;
+import org.universaltranslator.core.SettingsSelectionList;
 
 /** Dependency-free settings UI shared by Forge 1.8.9 and 1.12.2. */
 final class LegacyConfigScreen extends GuiScreen {
@@ -35,6 +38,7 @@ final class LegacyConfigScreen extends GuiScreen {
     private static final int VANILLA = 17;
     private static final int OUTGOING_TARGET_LANGUAGE = 18;
     private static final int PLAYER_NAMES = 19;
+    private static final int UI_STYLE = 20;
 
     private final GuiScreen parent;
     private final LegacyConfig original;
@@ -44,6 +48,7 @@ final class LegacyConfigScreen extends GuiScreen {
     private boolean translateVanilla;
     private boolean translateOutgoing;
     private boolean translatePlayerNames;
+    private boolean animatedUi;
     private boolean diskCache;
     private boolean offlineAutoDownload;
     private OfflineModel offlineModel;
@@ -61,6 +66,8 @@ final class LegacyConfigScreen extends GuiScreen {
     private GuiTextField blockedKeywords;
     private FontRenderer renderer;
     private String status = "";
+    private long animationStartedNanos = System.nanoTime();
+    private SettingsSelectionList.Kind openSelection = SettingsSelectionList.Kind.NONE;
 
     LegacyConfigScreen(GuiScreen parent, LegacyConfig config) {
         this.parent = parent;
@@ -71,6 +78,7 @@ final class LegacyConfigScreen extends GuiScreen {
         this.translateVanilla = config.translateVanilla;
         this.translateOutgoing = config.translateOutgoing;
         this.translatePlayerNames = config.translatePlayerNames;
+        this.animatedUi = config.animatedUi;
         this.diskCache = config.diskCache;
         this.offlineAutoDownload = config.offlineAutoDownload;
         this.offlineModel = config.offlineModel;
@@ -99,6 +107,9 @@ final class LegacyConfigScreen extends GuiScreen {
         renderer = LegacyVersionAccess.fontRenderer();
         Layout layout = layout();
         int left = layout.left;
+        int styleWidth = Math.min(86, layout.buttonWidth);
+        buttonList.add(new GuiButton(UI_STYLE, Math.max(4, width - styleWidth - 6), 6,
+                styleWidth, 20, ""));
         buttonList.add(new GuiButton(ENABLED, left, layout.row(0), layout.buttonWidth, 20, ""));
         buttonList.add(new GuiButton(CACHE, layout.right, layout.row(0), layout.buttonWidth, 20, ""));
         buttonList.add(new GuiButton(CHAT, left, layout.row(1), layout.buttonWidth, 20, ""));
@@ -152,7 +163,7 @@ final class LegacyConfigScreen extends GuiScreen {
         } else if (button.id == VANILLA) {
             translateVanilla = !translateVanilla;
         } else if (button.id == PROVIDER) {
-            provider = nextProvider(provider);
+            openSelection = SettingsSelectionList.Kind.PROVIDER;
         } else if (button.id == DISPLAY) {
             displayMode = displayMode == TranslationDisplayMode.ORIGINAL_AND_TRANSLATED
                     ? TranslationDisplayMode.TRANSLATED_ONLY
@@ -174,15 +185,18 @@ final class LegacyConfigScreen extends GuiScreen {
             translateOutgoing = !translateOutgoing;
         } else if (button.id == PLAYER_NAMES) {
             translatePlayerNames = !translatePlayerNames;
+        } else if (button.id == UI_STYLE) {
+            animatedUi = !animatedUi;
+            animationStartedNanos = System.nanoTime();
         } else if (button.id == MODEL) {
             offlineModel = offlineModel.next();
         } else if (button.id == DIAGNOSTICS) {
             mc.displayGuiScreen(new LegacyDiagnosticsScreen(this));
             return;
         } else if (button.id == TARGET_LANGUAGE) {
-            targetLanguage = TargetLanguage.nextPreset(targetLanguage);
+            openSelection = SettingsSelectionList.Kind.TARGET_LANGUAGE;
         } else if (button.id == OUTGOING_TARGET_LANGUAGE) {
-            outgoingTargetLanguage = TargetLanguage.nextPreset(outgoingTargetLanguage);
+            openSelection = SettingsSelectionList.Kind.OUTGOING_LANGUAGE;
         } else if (button.id == SAVE) {
             saveAndApply();
         } else if (button.id == CANCEL) {
@@ -192,6 +206,9 @@ final class LegacyConfigScreen extends GuiScreen {
     }
 
     private void refreshLabels() {
+        button(UI_STYLE).displayString = tr("screen.universal_translator.option.ui_style",
+                tr(animatedUi ? "value.universal_translator.ui_animated"
+                        : "value.universal_translator.ui_classic"));
         button(ENABLED).displayString = tr("screen.universal_translator.option.automatic", onOff(enabled));
         button(CHAT).displayString = tr("screen.universal_translator.option.chat", onOff(translateChat));
         button(OTHER).displayString = tr("screen.universal_translator.option.other", onOff(translateOther));
@@ -263,7 +280,8 @@ final class LegacyConfigScreen extends GuiScreen {
                     offlineAutoDownload,
                     offlineModel,
                     apiFallback,
-                    diskCache);
+                    diskCache,
+                    animatedUi);
             if (updated.enabled && "tencent-hunyuan".equalsIgnoreCase(updated.provider)
                     && (updated.tencentSecretId.isEmpty() || updated.tencentSecretKey.isEmpty())) {
                 throw new IllegalArgumentException(tr("error.universal_translator.tencent_credentials"));
@@ -306,6 +324,10 @@ final class LegacyConfigScreen extends GuiScreen {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        if (openSelection != SettingsSelectionList.Kind.NONE
+                && selectFromList(mouseX, mouseY)) {
+            return;
+        }
         super.mouseClicked(mouseX, mouseY, mouseButton);
         endpoint.mouseClicked(mouseX, mouseY, mouseButton);
         blockedKeywords.mouseClicked(mouseX, mouseY, mouseButton);
@@ -314,21 +336,42 @@ final class LegacyConfigScreen extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        drawCenteredString(renderer, tr("screen.universal_translator.settings.title"),
-                width / 2, 18, 0xFFFFFF);
         Layout layout = layout();
+        long now = System.nanoTime();
+        float opening = 1.0F;
+        if (animatedUi) {
+            opening = SettingsUiAnimation.openProgress(animationStartedNanos, now);
+            int center = width / 2;
+            int half = SettingsUiAnimation.expandingHalfWidth(
+                    layout.totalWidth / 2 + 12, opening);
+            int panelLeft = center - half;
+            int panelRight = center + half;
+            int panelBottom = Math.min(height - 4, layout.saveY + 42);
+            drawRect(0, 0, width, height, 0x76070B10);
+            drawRect(panelLeft - 2, 2, panelRight + 2, panelBottom + 2, 0x70101820);
+            drawRect(panelLeft, 4, panelRight, panelBottom, 0xD41A232E);
+            drawRect(panelLeft, 4, panelRight, 5, 0xCC55D6FF);
+            drawRect(panelLeft, 32, panelRight, 33, 0x6655D6FF);
+            int sweep = SettingsUiAnimation.sweepX(
+                    panelLeft, Math.max(panelLeft, panelRight - 26), now);
+            drawRect(sweep, 32, Math.min(panelRight, sweep + 26), 34,
+                    SettingsUiAnimation.pulseColor(now));
+        }
+        drawCenteredString(renderer, tr("screen.universal_translator.settings.title"),
+                width / 2, 18,
+                animatedUi ? SettingsUiAnimation.pulseColor(now) : 0xFFFFFFFF);
         int left = layout.left;
         drawString(renderer, tr("screen.universal_translator.target_language_hint"),
-                left, layout.targetY - 11, 0xA0A0A0);
+                left, layout.targetY - 11, 0xFFA0A0A0);
         drawString(renderer, tr("screen.universal_translator.endpoint_hint"),
-                left, layout.endpointY - 11, 0xA0A0A0);
+                left, layout.endpointY - 11, 0xFFA0A0A0);
         drawString(renderer, tr("screen.universal_translator.outgoing_target_hint"),
-                layout.right, layout.endpointY - 11, 0xA0A0A0);
+                layout.right, layout.endpointY - 11, 0xFFA0A0A0);
         endpoint.drawTextBox();
         blockedKeywords.drawTextBox();
         if (blockedKeywords.getText().isEmpty() && !blockedKeywords.isFocused()) {
             drawString(renderer, tr("screen.universal_translator.blocked_keywords_hint"),
-                    layout.right + 4, layout.row(5) + 6, 0x808080);
+                    layout.right + 4, layout.row(5) + 6, 0xFF808080);
         }
         String rawRuntimeStatus = LegacyTranslationRuntime.status();
         String runtimeStatus = TranslationStatusLocalizer.localize(rawRuntimeStatus,
@@ -336,10 +379,10 @@ final class LegacyConfigScreen extends GuiScreen {
         int belowSave = layout.saveY + 28;
         int messageY = belowSave <= height - 10 ? belowSave : layout.saveY - 14;
         if (!status.isEmpty()) {
-            drawCenteredString(renderer, status, width / 2, messageY, 0xFF5555);
+            drawCenteredString(renderer, status, width / 2, messageY, 0xFFFF5555);
         } else if (!runtimeStatus.isEmpty()) {
             drawCenteredString(renderer, runtimeStatus, width / 2, messageY,
-                    isFailureStatus(rawRuntimeStatus) ? 0xFF5555 : 0x55FF55);
+                    isFailureStatus(rawRuntimeStatus) ? 0xFFFF5555 : 0xFF55FF55);
         } else if (layout.saveY - layout.endpointY >= 52) {
             int infoY = layout.endpointY + 28;
             drawCenteredString(
@@ -347,11 +390,75 @@ final class LegacyConfigScreen extends GuiScreen {
                     tr(isOffline()
                             ? "screen.universal_translator.info.offline"
                             : "screen.universal_translator.info.api"),
-                    width / 2, infoY, 0xFFAA55);
+                    width / 2, infoY, 0xFFFFAA55);
             drawCenteredString(renderer, tr("screen.universal_translator.info.keybind"),
-                    width / 2, infoY + 15, 0xA0A0A0);
+                    width / 2, infoY + 15, 0xFFA0A0A0);
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
+        if (animatedUi) {
+            int overlayAlpha = SettingsUiAnimation.openingOverlayAlpha(opening);
+            if (overlayAlpha > 0) {
+                drawRect(0, 0, width, height, overlayAlpha << 24);
+            }
+        }
+        if (openSelection != SettingsSelectionList.Kind.NONE) {
+            renderSelection(mouseX, mouseY);
+        }
+    }
+
+    private void renderSelection(int mouseX, int mouseY) {
+        String[] values = SettingsSelectionList.values(openSelection);
+        SettingsSelectionList.Layout list = SettingsSelectionList.layout(width, height, values.length);
+        drawRect(0, 0, width, height, 0xB0080B10);
+        drawRect(list.panelLeft() - 1, list.panelTop - 1,
+                list.panelRight() + 1, list.panelBottom + 1, 0xFF55D6FF);
+        drawRect(list.panelLeft(), list.panelTop,
+                list.panelRight(), list.panelBottom, 0xF018202A);
+        drawCenteredString(renderer, tr(selectionTitleKey()),
+                width / 2, list.panelTop + 9, 0xFFFFFFFF);
+        for (int index = 0; index < values.length; index++) {
+            int x = list.x(index);
+            int y = list.y(index);
+            boolean hovered = mouseX >= x && mouseX < x + list.buttonWidth
+                    && mouseY >= y && mouseY < y + list.buttonHeight;
+            boolean selected = values[index].equalsIgnoreCase(selectionValue());
+            drawRect(x, y, x + list.buttonWidth, y + list.buttonHeight,
+                    hovered ? 0xFF3B6178 : selected ? 0xFF28533D : 0xFF303844);
+            drawCenteredString(renderer,
+                    SettingsSelectionList.displayName(openSelection, values[index]),
+                    x + list.buttonWidth / 2, y + Math.max(1, (list.buttonHeight - 8) / 2),
+                    selected ? 0xFF55FF88 : 0xFFFFFFFF);
+        }
+    }
+
+    private boolean selectFromList(double mouseX, double mouseY) {
+        String[] values = SettingsSelectionList.values(openSelection);
+        SettingsSelectionList.Layout list = SettingsSelectionList.layout(width, height, values.length);
+        int selected = list.optionAt(mouseX, mouseY, values.length);
+        if (selected >= 0) {
+            if (openSelection == SettingsSelectionList.Kind.PROVIDER) provider = values[selected];
+            else if (openSelection == SettingsSelectionList.Kind.TARGET_LANGUAGE) targetLanguage = values[selected];
+            else outgoingTargetLanguage = values[selected];
+            openSelection = SettingsSelectionList.Kind.NONE;
+            refreshLabels();
+            return true;
+        } else if (!list.contains(mouseX, mouseY)) {
+            openSelection = SettingsSelectionList.Kind.NONE;
+            return false;
+        }
+        return true;
+    }
+
+    private String selectionValue() {
+        if (openSelection == SettingsSelectionList.Kind.PROVIDER) return provider;
+        if (openSelection == SettingsSelectionList.Kind.TARGET_LANGUAGE) return targetLanguage;
+        return outgoingTargetLanguage;
+    }
+
+    private String selectionTitleKey() {
+        if (openSelection == SettingsSelectionList.Kind.PROVIDER) return "screen.universal_translator.selection.provider";
+        if (openSelection == SettingsSelectionList.Kind.TARGET_LANGUAGE) return "screen.universal_translator.selection.target_language";
+        return "screen.universal_translator.selection.outgoing_language";
     }
 
     @Override
@@ -369,10 +476,6 @@ final class LegacyConfigScreen extends GuiScreen {
 
     private String providerLabel() {
         return TranslationProviderCatalog.displayName(provider);
-    }
-
-    private static String nextProvider(String current) {
-        return TranslationProviderCatalog.next(current);
     }
 
     void applyLlmSettings(String endpoint, String model, String apiKey) {
@@ -403,17 +506,9 @@ final class LegacyConfigScreen extends GuiScreen {
     }
 
     private Layout layout() {
-        int totalWidth = Math.max(180, Math.min(310, width - 20));
-        int gap = 8;
-        int buttonWidth = (totalWidth - gap) / 2;
-        int left = (width - totalWidth) / 2;
-        int top = Math.max(20, Math.min(44, 20 + Math.max(0, height - 220) / 4));
-        int rowStep = height >= 300 ? 26 : (height >= 260 ? 22 : 20);
-        int targetY = top + rowStep * 7 + 2;
-        int endpointY = targetY + (height >= 300 ? 32 : 28);
-        int saveY = height >= 330 ? 296 : Math.max(endpointY + 22, height - 24);
-        return new Layout(left, left + buttonWidth + gap, totalWidth, buttonWidth,
-                top, rowStep, targetY, endpointY, saveY);
+        SettingsScreenLayout.Geometry geometry = SettingsScreenLayout.calculate(width, height);
+        return new Layout(geometry.left(), geometry.right(), geometry.totalWidth(), geometry.buttonWidth(),
+                geometry.top(), geometry.rowStep(), geometry.targetY(), geometry.endpointY(), geometry.saveY());
     }
 
     private static final class Layout {

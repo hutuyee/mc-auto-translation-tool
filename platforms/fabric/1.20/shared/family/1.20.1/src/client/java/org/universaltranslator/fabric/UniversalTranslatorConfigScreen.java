@@ -11,6 +11,9 @@ import org.universaltranslator.core.TargetLanguage;
 import org.universaltranslator.core.TranslationStatusLocalizer;
 import org.universaltranslator.core.TranslationTextColor;
 import org.universaltranslator.core.TranslationProviderCatalog;
+import org.universaltranslator.core.SettingsUiAnimation;
+import org.universaltranslator.core.SettingsScreenLayout;
+import org.universaltranslator.core.SettingsSelectionList;
 
 /** Minimal dependency-free settings screen, opened with U by default. */
 final class UniversalTranslatorConfigScreen extends Screen {
@@ -22,6 +25,7 @@ final class UniversalTranslatorConfigScreen extends Screen {
     private boolean translateVanilla;
     private boolean translateOutgoing;
     private boolean translatePlayerNames;
+    private boolean animatedUi;
     private boolean diskCache;
     private boolean offlineAutoDownload;
     private OfflineModel offlineModel;
@@ -38,6 +42,7 @@ final class UniversalTranslatorConfigScreen extends Screen {
     private TextFieldWidget endpoint;
     private TextFieldWidget blockedKeywords;
     private ButtonWidget enabledButton;
+    private ButtonWidget uiStyleButton;
     private ButtonWidget chatButton;
     private ButtonWidget otherButton;
     private ButtonWidget vanillaButton;
@@ -55,6 +60,8 @@ final class UniversalTranslatorConfigScreen extends Screen {
     private ButtonWidget targetLanguageButton;
     private ButtonWidget outgoingTargetLanguageButton;
     private String status = "";
+    private long animationStartedNanos = System.nanoTime();
+    private SettingsSelectionList.Kind openSelection = SettingsSelectionList.Kind.NONE;
 
     UniversalTranslatorConfigScreen(Screen parent, FabricConfig config) {
         super(Text.translatable("screen.universal_translator.settings.title"));
@@ -66,6 +73,7 @@ final class UniversalTranslatorConfigScreen extends Screen {
         this.translateVanilla = config.translateVanilla;
         this.translateOutgoing = config.translateOutgoing;
         this.translatePlayerNames = config.translatePlayerNames;
+        this.animatedUi = config.animatedUi;
         this.diskCache = config.diskCache;
         this.offlineAutoDownload = config.offlineAutoDownload;
         this.offlineModel = config.offlineModel;
@@ -92,6 +100,12 @@ final class UniversalTranslatorConfigScreen extends Screen {
         }
         Layout layout = layout();
         int left = layout.left;
+        int styleWidth = Math.min(86, layout.buttonWidth);
+        this.uiStyleButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
+            animatedUi = !animatedUi;
+            animationStartedNanos = System.nanoTime();
+            refreshLabels();
+        }).dimensions(Math.max(4, this.width - styleWidth - 6), 6, styleWidth, 20).build());
         this.enabledButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
             enabled = !enabled;
             refreshLabels();
@@ -109,8 +123,7 @@ final class UniversalTranslatorConfigScreen extends Screen {
             refreshLabels();
         }).dimensions(layout.right, layout.row(1), layout.buttonWidth, 20).build());
         this.providerButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
-            provider = nextProvider(provider);
-            refreshLabels();
+            openSelection = SettingsSelectionList.Kind.PROVIDER;
         }).dimensions(left, layout.row(2), layout.buttonWidth, 20).build());
         this.displayButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
             displayMode = displayMode == TranslationDisplayMode.ORIGINAL_AND_TRANSLATED
@@ -171,8 +184,7 @@ final class UniversalTranslatorConfigScreen extends Screen {
         }).dimensions(compactMiddle, layout.row(6), compactWidth, 20).build());
 
         this.targetLanguageButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
-            targetLanguage = TargetLanguage.nextPreset(targetLanguage);
-            refreshLabels();
+            openSelection = SettingsSelectionList.Kind.TARGET_LANGUAGE;
         }).dimensions(left, layout.targetY, layout.buttonWidth, 20).build());
         this.outgoingButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
             translateOutgoing = !translateOutgoing;
@@ -184,8 +196,7 @@ final class UniversalTranslatorConfigScreen extends Screen {
         this.endpoint.setMaxLength(512);
         this.endpoint.setText(endpointValue);
         this.outgoingTargetLanguageButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button -> {
-            outgoingTargetLanguage = TargetLanguage.nextPreset(outgoingTargetLanguage);
-            refreshLabels();
+            openSelection = SettingsSelectionList.Kind.OUTGOING_LANGUAGE;
         }).dimensions(layout.right, layout.endpointY, layout.buttonWidth, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.translatable("screen.universal_translator.save"), button -> saveAndApply())
@@ -196,6 +207,9 @@ final class UniversalTranslatorConfigScreen extends Screen {
     }
 
     private void refreshLabels() {
+        uiStyleButton.setMessage(Text.translatable("screen.universal_translator.option.ui_style",
+                tr(animatedUi ? "value.universal_translator.ui_animated"
+                        : "value.universal_translator.ui_classic")));
         enabledButton.setMessage(Text.translatable("screen.universal_translator.option.automatic", onOff(enabled)));
         chatButton.setMessage(Text.translatable("screen.universal_translator.option.chat", onOff(translateChat)));
         otherButton.setMessage(Text.translatable("screen.universal_translator.option.other", onOff(translateOther)));
@@ -258,7 +272,8 @@ final class UniversalTranslatorConfigScreen extends Screen {
                     offlineAutoDownload,
                     offlineModel,
                     apiFallback,
-                    diskCache);
+                    diskCache,
+                    animatedUi);
             if (updated.enabled && "tencent-hunyuan".equalsIgnoreCase(updated.provider)
                     && (updated.tencentSecretId.isEmpty() || updated.tencentSecretKey.isEmpty())) {
                 throw new IllegalArgumentException(tr("error.universal_translator.tencent_credentials"));
@@ -285,18 +300,38 @@ final class UniversalTranslatorConfigScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 18, 0xFFFFFF);
         Layout layout = layout();
+        long now = System.nanoTime();
+        float opening = 1.0F;
+        if (animatedUi) {
+            opening = SettingsUiAnimation.openProgress(animationStartedNanos, now);
+            int center = this.width / 2;
+            int half = SettingsUiAnimation.expandingHalfWidth(
+                    layout.totalWidth / 2 + 12, opening);
+            int panelLeft = center - half;
+            int panelRight = center + half;
+            int panelBottom = Math.min(this.height - 4, layout.saveY + 42);
+            context.fill(0, 0, this.width, this.height, 0x76070B10);
+            context.fill(panelLeft - 2, 2, panelRight + 2, panelBottom + 2, 0x70101820);
+            context.fill(panelLeft, 4, panelRight, panelBottom, 0xD41A232E);
+            context.fill(panelLeft, 4, panelRight, 5, 0xCC55D6FF);
+            context.fill(panelLeft, 32, panelRight, 33, 0x6655D6FF);
+            int sweep = SettingsUiAnimation.sweepX(panelLeft, Math.max(panelLeft, panelRight - 26), now);
+            context.fill(sweep, 32, Math.min(panelRight, sweep + 26), 34,
+                    SettingsUiAnimation.pulseColor(now));
+        }
+        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 18,
+                animatedUi ? SettingsUiAnimation.pulseColor(now) : 0xFFFFFFFF);
         int left = layout.left;
         context.drawTextWithShadow(this.textRenderer,
                 Text.translatable("screen.universal_translator.target_language_hint"),
-                left, layout.targetY - 11, 0xA0A0A0);
+                left, layout.targetY - 11, 0xFFA0A0A0);
         context.drawTextWithShadow(this.textRenderer,
                 Text.translatable("screen.universal_translator.endpoint_hint"),
-                left, layout.endpointY - 11, 0xA0A0A0);
+                left, layout.endpointY - 11, 0xFFA0A0A0);
         context.drawTextWithShadow(this.textRenderer,
                 Text.translatable("screen.universal_translator.outgoing_target_hint"),
-                layout.right, layout.endpointY - 11, 0xA0A0A0);
+                layout.right, layout.endpointY - 11, 0xFFA0A0A0);
         String rawRuntimeStatus = FabricTranslationRuntime.status();
         String runtimeStatus = TranslationStatusLocalizer.localize(rawRuntimeStatus,
                 UniversalTranslatorConfigScreen::tr);
@@ -304,11 +339,11 @@ final class UniversalTranslatorConfigScreen extends Screen {
         int messageY = belowSave <= this.height - 10 ? belowSave : layout.saveY - 14;
         if (!status.isEmpty()) {
             context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(status),
-                    this.width / 2, messageY, 0xFF5555);
+                    this.width / 2, messageY, 0xFFFF5555);
         } else if (!runtimeStatus.isEmpty()) {
             context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(runtimeStatus),
                     this.width / 2, messageY,
-                    isFailureStatus(rawRuntimeStatus) ? 0xFF5555 : 0x55FF55);
+                    isFailureStatus(rawRuntimeStatus) ? 0xFFFF5555 : 0xFF55FF55);
         } else if (layout.saveY - layout.endpointY >= 52) {
             int infoY = layout.endpointY + 28;
             context.drawCenteredTextWithShadow(
@@ -316,12 +351,93 @@ final class UniversalTranslatorConfigScreen extends Screen {
                     Text.translatable(isOffline()
                             ? "screen.universal_translator.info.offline"
                             : "screen.universal_translator.info.api"),
-                    this.width / 2, infoY, 0xFFAA55);
+                    this.width / 2, infoY, 0xFFFFAA55);
             context.drawCenteredTextWithShadow(this.textRenderer,
                     Text.translatable("screen.universal_translator.info.keybind"),
-                    this.width / 2, infoY + 15, 0xA0A0A0);
+                    this.width / 2, infoY + 15, 0xFFA0A0A0);
         }
         super.render(context, mouseX, mouseY, delta);
+        if (animatedUi) {
+            int overlayAlpha = SettingsUiAnimation.openingOverlayAlpha(opening);
+            if (overlayAlpha > 0) {
+                context.fill(0, 0, this.width, this.height, overlayAlpha << 24);
+            }
+        }
+        if (openSelection != SettingsSelectionList.Kind.NONE) {
+            renderSelection(context, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (openSelection != SettingsSelectionList.Kind.NONE
+                && selectFromList(mouseX, mouseY)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void renderSelection(DrawContext context, int mouseX, int mouseY) {
+        String[] values = SettingsSelectionList.values(openSelection);
+        SettingsSelectionList.Layout list = SettingsSelectionList.layout(width, height, values.length);
+        context.fill(0, 0, width, height, 0xB0080B10);
+        context.fill(list.panelLeft() - 1, list.panelTop - 1,
+                list.panelRight() + 1, list.panelBottom + 1, 0xFF55D6FF);
+        context.fill(list.panelLeft(), list.panelTop,
+                list.panelRight(), list.panelBottom, 0xF018202A);
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.translatable(selectionTitleKey()), width / 2, list.panelTop + 9, 0xFFFFFFFF);
+        for (int index = 0; index < values.length; index++) {
+            int x = list.x(index);
+            int y = list.y(index);
+            boolean hovered = mouseX >= x && mouseX < x + list.buttonWidth
+                    && mouseY >= y && mouseY < y + list.buttonHeight;
+            boolean selected = values[index].equalsIgnoreCase(selectionValue());
+            context.fill(x, y, x + list.buttonWidth, y + list.buttonHeight,
+                    hovered ? 0xFF3B6178 : selected ? 0xFF28533D : 0xFF303844);
+            context.drawCenteredTextWithShadow(textRenderer,
+                    Text.literal(SettingsSelectionList.displayName(openSelection, values[index])),
+                    x + list.buttonWidth / 2, y + Math.max(1, (list.buttonHeight - 8) / 2),
+                    selected ? 0xFF55FF88 : 0xFFFFFFFF);
+        }
+    }
+
+    private boolean selectFromList(double mouseX, double mouseY) {
+        String[] values = SettingsSelectionList.values(openSelection);
+        SettingsSelectionList.Layout list = SettingsSelectionList.layout(width, height, values.length);
+        int selected = list.optionAt(mouseX, mouseY, values.length);
+        if (selected >= 0) {
+            if (openSelection == SettingsSelectionList.Kind.PROVIDER) {
+                provider = values[selected];
+            } else if (openSelection == SettingsSelectionList.Kind.TARGET_LANGUAGE) {
+                targetLanguage = values[selected];
+            } else {
+                outgoingTargetLanguage = values[selected];
+            }
+            openSelection = SettingsSelectionList.Kind.NONE;
+            refreshLabels();
+            return true;
+        } else if (!list.contains(mouseX, mouseY)) {
+            openSelection = SettingsSelectionList.Kind.NONE;
+            return false;
+        }
+        return true;
+    }
+
+    private String selectionValue() {
+        if (openSelection == SettingsSelectionList.Kind.PROVIDER) return provider;
+        if (openSelection == SettingsSelectionList.Kind.TARGET_LANGUAGE) return targetLanguage;
+        return outgoingTargetLanguage;
+    }
+
+    private String selectionTitleKey() {
+        if (openSelection == SettingsSelectionList.Kind.PROVIDER) {
+            return "screen.universal_translator.selection.provider";
+        }
+        if (openSelection == SettingsSelectionList.Kind.TARGET_LANGUAGE) {
+            return "screen.universal_translator.selection.target_language";
+        }
+        return "screen.universal_translator.selection.outgoing_language";
     }
 
     @Override
@@ -346,10 +462,6 @@ final class UniversalTranslatorConfigScreen extends Screen {
 
     private String providerLabel() {
         return TranslationProviderCatalog.displayName(provider);
-    }
-
-    private static String nextProvider(String current) {
-        return TranslationProviderCatalog.next(current);
     }
 
     void applyLlmSettings(String endpoint, String model, String apiKey) {
@@ -380,17 +492,9 @@ final class UniversalTranslatorConfigScreen extends Screen {
     }
 
     private Layout layout() {
-        int totalWidth = Math.max(180, Math.min(310, this.width - 20));
-        int gap = 8;
-        int buttonWidth = (totalWidth - gap) / 2;
-        int left = (this.width - totalWidth) / 2;
-        int top = Math.max(20, Math.min(44, 20 + Math.max(0, this.height - 220) / 4));
-        int rowStep = this.height >= 300 ? 26 : (this.height >= 260 ? 22 : 20);
-        int targetY = top + rowStep * 7 + 2;
-        int endpointY = targetY + (this.height >= 300 ? 32 : 28);
-        int saveY = this.height >= 330 ? 296 : Math.max(endpointY + 22, this.height - 24);
-        return new Layout(left, left + buttonWidth + gap, totalWidth, buttonWidth,
-                top, rowStep, targetY, endpointY, saveY);
+        SettingsScreenLayout.Geometry geometry = SettingsScreenLayout.calculate(this.width, this.height);
+        return new Layout(geometry.left(), geometry.right(), geometry.totalWidth(), geometry.buttonWidth(),
+                geometry.top(), geometry.rowStep(), geometry.targetY(), geometry.endpointY(), geometry.saveY());
     }
 
     private static final class Layout {

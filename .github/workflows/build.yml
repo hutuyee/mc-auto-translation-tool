@@ -48,6 +48,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - target: fabric-1.16.x
+            java: "21"
+          - target: fabric-1.17-1.18.x
+            java: "21"
+          - target: fabric-1.19.x
+            java: "21"
+          - target: fabric-1.20.x
+            java: "21"
           - target: fabric-1.21.x
             java: "21"
           - target: fabric-1.21.4-1.21.5
@@ -69,6 +77,10 @@ jobs:
           - target: forge-26.2
             java: "25"
           - target: neoforge-1.21.1
+            java: "21"
+          - target: neoforge-1.21.3
+            java: "21"
+          - target: neoforge-1.21.11
             java: "21"
     steps:
       - name: Check out repository

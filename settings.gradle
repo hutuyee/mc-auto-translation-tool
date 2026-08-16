@@ -1,6 +1,8 @@
 pluginManagement {
     repositories {
         maven { url = "https://maven.fabricmc.net/" }
+        maven { url = "https://maven.ornithemc.net/releases/" }
+        maven { url = "https://maven.ornithemc.net/snapshots/" }
         maven { url = "https://maven.minecraftforge.net/" }
         maven { url = "https://maven.neoforged.net/releases/" }
         gradlePluginPortal()
@@ -50,7 +52,6 @@ def platformProjects = [
         "platform-fabric-1.8.6"         : "platforms/fabric/1.0-1.8/versions/1.8.6",
         "platform-fabric-1.8.7"         : "platforms/fabric/1.0-1.8/versions/1.8.7",
         "platform-fabric-1.8.8"         : "platforms/fabric/1.0-1.8/versions/1.8.8",
-        "platform-fabric-1.0-1.8.x"    : "platforms/fabric/1.0-1.8/bundle",
         "platform-fabric-1.8.9"         : "platforms/fabric/1.8-1.12/versions/1.8.9",
         "platform-fabric-1.9"           : "platforms/fabric/1.8-1.12/versions/1.9",
         "platform-fabric-1.9.1"         : "platforms/fabric/1.8-1.12/versions/1.9.1",
@@ -127,6 +128,8 @@ def platformProjects = [
         "platform-fabric-26.x"          : "platforms/fabric/26.x/bundle",
         "platform-neoforge-1.20.1"      : "platforms/neoforge/1.20.1",
         "platform-neoforge-1.21.1"      : "platforms/neoforge/1.21/versions/1.21.1",
+        "platform-neoforge-1.21.3"      : "platforms/neoforge/1.21/versions/1.21.3",
+        "platform-neoforge-1.21.11"     : "platforms/neoforge/1.21/versions/1.21.11",
         "platform-forge-1.16.5"         : "platforms/forge/modern/1.16.5",
         "platform-forge-1.19.2"         : "platforms/forge/modern/1.19.2",
         "platform-forge-1.20.1"         : "platforms/forge/modern/1.20.1",

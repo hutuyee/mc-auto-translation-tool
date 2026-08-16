@@ -255,7 +255,7 @@ $env:GRADLE_USER_HOME = "D:\Gradle\cache"
 ```
 
 The verified bundle is written to
-`platforms/fabric/1.0-1.8/bundle/build/libs/mc-auto-translation-tool-fabric-1.0.0-1.8.8-1.3.3.jar`.
+`platforms/fabric/1.0-1.8/bundle/build/libs/mc-auto-translation-tool-fabric-1.0.0-1.8.8-1.3.5.jar`.
 
 ## Fabric 1.8.9 through 1.12.2 (Ornithe bundle)
 
@@ -269,7 +269,7 @@ $env:GRADLE_USER_HOME = "D:\Gradle\cache"
 ```
 
 The verified bundle is written to
-`platforms/fabric/1.8-1.12/bundle/build/libs/mc-auto-translation-tool-fabric-1.8.9-1.12.2-1.3.3.jar`.
+`platforms/fabric/1.8-1.12/bundle/build/libs/mc-auto-translation-tool-fabric-1.8.9-1.12.2-1.3.5.jar`.
 
 ## Fabric 1.16.5
 
@@ -323,25 +323,25 @@ To validate arbitrary build outputs directly, pass them to the standalone verifi
 ```bash
 python3 scripts/verify_release_jars.py path/to/mod.jar
 python3 scripts/verify_release_jars.py \
-  --checksum-file downloads/1.3.3/SHA256SUMS.txt \
-  --require-complete-checksums downloads/1.3.3/*.jar
+  --checksum-file downloads/1.3.5/SHA256SUMS.txt \
+  --require-complete-checksums downloads/1.3.5/*.jar
 ```
 
 It checks ZIP structure, expanded metadata, entrypoints, declared Mixin classes and refmaps, nested
 Fabric JARs, legacy Forge runtime mappings, SHA-256 values, and checksum-manifest coverage. Legacy
 Fabric and Forge `build` tasks run the same verifier against their generated release JARs.
 
-The publish workflow reduces the 27 exact build artifacts to 13 directly installable JARs. It
-flattens all 19 Fabric implementations into one Loader-selected bundle, broadens four Forge
+The publish workflow reduces the 30 release build artifacts to 15 directly installable JARs. It
+flattens all 39 Fabric implementations into one Loader-selected bundle, broadens four Forge
 families after confirming compatible payloads, and keeps Forge/NeoForge 1.20.1 as separately
 verified loader-specific JARs. Different APIs remain separate. Reproduce and validate
 the publish set with:
 
 ```bash
 python3 scripts/prepare_release_assets.py \
-  --release-dir downloads/1.3.3 \
+  --release-dir downloads/1.3.5 \
   --output-dir build/release-assets \
-  --version 1.3.3
+  --version 1.3.5
 python3 scripts/verify_release_jars.py \
   --checksum-file build/release-assets/SHA256SUMS.txt \
   --require-complete-checksums build/release-assets/*.jar
