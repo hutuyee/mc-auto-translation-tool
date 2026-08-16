@@ -12,6 +12,7 @@ import org.universaltranslator.core.TranslationStatusLocalizer;
 import org.universaltranslator.core.TranslationTextColor;
 import org.universaltranslator.core.TranslationProviderCatalog;
 import org.universaltranslator.core.SettingsUiAnimation;
+import org.universaltranslator.core.SettingsScreenLayout;
 import org.universaltranslator.core.SettingsSelectionList;
 
 /** Minimal dependency-free settings screen, opened with U by default. */

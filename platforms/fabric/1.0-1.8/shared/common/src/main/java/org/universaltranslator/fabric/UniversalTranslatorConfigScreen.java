@@ -12,6 +12,7 @@ import org.universaltranslator.core.TranslationStatusLocalizer;
 import org.universaltranslator.core.TranslationTextColor;
 import org.universaltranslator.core.TranslationProviderCatalog;
 import org.universaltranslator.core.SettingsUiAnimation;
+import org.universaltranslator.core.SettingsScreenLayout;
 import org.universaltranslator.core.SettingsSelectionList;
 
 /** Dependency-free settings UI shared by Forge 1.8.9 and 1.12.2. */
@@ -532,4 +533,3 @@ final class UniversalTranslatorConfigScreen extends Screen {
         }
     }
 }
-

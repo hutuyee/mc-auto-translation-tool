@@ -229,6 +229,18 @@ tasks.register("validateNonOverlappingSettingsLabels") {
                             violations.collect { relativePath(it) }.sort().join("\n")
             )
         }
+
+        def missingLayoutImports = settingsScreens.findAll { source ->
+            def text = source.getText("UTF-8")
+            text.contains("SettingsScreenLayout.") &&
+                    !text.contains("import org.universaltranslator.core.SettingsScreenLayout;")
+        }
+        if (!missingLayoutImports.isEmpty()) {
+            throw new GradleException(
+                    "Settings screens using the shared layout must import SettingsScreenLayout:\n" +
+                            missingLayoutImports.collect { relativePath(it) }.sort().join("\n")
+            )
+        }
     }
 }
 
