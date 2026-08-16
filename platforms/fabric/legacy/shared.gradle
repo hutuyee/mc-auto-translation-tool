@@ -13,19 +13,19 @@ requiredProperties.each { propertyName ->
 }
 
 def sourceLayers = [
-        "1.14": ["family/1.14"],
-        "1.14.1": ["family/1.14"],
-        "1.14.2": ["family/1.14"],
-        "1.14.3": ["family/1.14"],
-        "1.14.4": ["family/1.14"],
-        "1.15": ["family/1.15"],
-        "1.15.1": ["family/1.15"],
-        "1.15.2": ["family/1.15"],
-        "1.16": ["family/1.16-1.16.1"],
-        "1.16.1": ["family/1.16-1.16.1"],
-        "1.16.2": ["family/1.16.0-1.16.4", "family/1.16.5-1.19.2", "rendered/1.16.5"],
-        "1.16.3": ["family/1.16.0-1.16.4", "family/1.16.5-1.19.2", "rendered/1.16.5"],
-        "1.16.4": ["family/1.16.0-1.16.4", "family/1.16.5-1.19.2", "rendered/1.16.5"],
+        "1.14": ["family/1.14-1.15"],
+        "1.14.1": ["family/1.14-1.15"],
+        "1.14.2": ["family/1.14-1.15"],
+        "1.14.3": ["family/1.14-1.15"],
+        "1.14.4": ["family/1.14-1.15"],
+        "1.15": ["family/1.14-1.15"],
+        "1.15.1": ["family/1.14-1.15"],
+        "1.15.2": ["family/1.14-1.15"],
+        "1.16": ["family/1.16.0-1.16.4"],
+        "1.16.1": ["family/1.16.0-1.16.4"],
+        "1.16.2": ["family/1.16.0-1.16.4"],
+        "1.16.3": ["family/1.16.0-1.16.4"],
+        "1.16.4": ["family/1.16.0-1.16.4"],
         "1.16.5": ["family/1.16.5", "family/1.16.5-1.19.2", "rendered/1.16.5"],
         "1.17": ["family/1.16.5-1.19.2", "rendered/1.16.5", "family/1.17"],
         "1.17.1": ["family/1.16.5-1.19.2", "rendered/1.16.5", "family/1.17.1-1.18"],
@@ -37,13 +37,13 @@ def sourceLayers = [
         "1.19.2": ["family/1.16.5-1.19.2", "rendered/1.19.2-plus", "family/1.19.2"],
         "1.19.3": ["rendered/1.19.2-plus", "family/1.19.3-1.19.4"],
         "1.19.4": ["rendered/1.19.2-plus", "family/1.19.3-1.19.4"],
-        "1.20": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20-1.20.4"],
-        "1.20.1": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20-1.20.4"],
-        "1.20.2": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20-1.20.4"],
-        "1.20.3": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20-1.20.4"],
-        "1.20.4": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20-1.20.4"],
-        "1.20.5": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20.5-1.20.6"],
-        "1.20.6": ["rendered/1.19.2-plus", "family/1.20.1", "chat-hud/1.20.5-1.20.6"]
+        "1.20": ["rendered/1.19.2-plus", "family/1.20.1"],
+        "1.20.1": ["rendered/1.19.2-plus", "family/1.20.1"],
+        "1.20.2": ["rendered/1.19.2-plus", "family/1.20.1"],
+        "1.20.3": ["rendered/1.19.2-plus", "family/1.20.1"],
+        "1.20.4": ["rendered/1.19.2-plus", "family/1.20.1"],
+        "1.20.5": ["rendered/1.19.2-plus", "family/1.20.1"],
+        "1.20.6": ["rendered/1.19.2-plus", "family/1.20.1"]
 ]
 def gameVersion = project.ext.legacyMinecraftVersion.toString()
 def layers = sourceLayers[gameVersion]
@@ -53,13 +53,13 @@ if (layers == null) {
 
 def sharedRoot = rootProject.file("platforms/fabric/legacy/shared")
 def rootForLayer = { layer ->
-    if (layer == "family/1.16-1.16.1" || layer == "family/1.16.0-1.16.4" || layer == "family/1.16.5") {
+    if (layer == "family/1.16.0-1.16.4" || layer == "family/1.16.5") {
         return rootProject.file("platforms/fabric/1.16/shared")
     }
-    if (layer == "family/1.14" || layer == "family/1.15" || layer == "family/1.14-1.15") {
+    if (layer == "family/1.14-1.15") {
         return rootProject.file("platforms/fabric/1.14-1.15/shared")
     }
-    if (layer.startsWith("family/1.20") || layer.startsWith("chat-hud/1.20")) {
+    if (layer.startsWith("family/1.20")) {
         return rootProject.file("platforms/fabric/1.20/shared")
     }
     if (layer.startsWith("family/1.17") || layer.startsWith("family/1.18.2")) {
@@ -73,16 +73,7 @@ def rootForLayer = { layer ->
 def splitEnvironment = !(gameVersion in ["1.14", "1.14.1", "1.14.2", "1.14.3", "1.14.4",
         "1.15", "1.15.1", "1.15.2", "1.16", "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17", "1.17.1"])
 def early114115 = gameVersion.startsWith("1.14") || gameVersion.startsWith("1.15")
-def early116 = gameVersion in ["1.16", "1.16.1"]
-def hasModMenu = !(early114115 || early116 || gameVersion in ["1.16.2", "1.16.3", "1.16.4"])
-def modmenuEntrypoint = hasModMenu ? """,
-    "modmenu": [
-      "org.universaltranslator.fabric.ModMenuIntegration"
-    ]""" : ""
-def modmenuSuggests = hasModMenu ? """,
-  "suggests": {
-    "modmenu": "*"
-  }""" : ""
+def early116 = gameVersion in ["1.16", "1.16.1", "1.16.2", "1.16.3", "1.16.4"]
 
 version = project.mod_version
 group = project.maven_group
@@ -122,7 +113,7 @@ if (splitEnvironment) {
 
     sourceSets {
         client {
-            if (!early114115) {
+            if (!(early114115 || early116)) {
                 java.srcDir new File(sharedRoot, "common/src/client/java")
             }
             layers.each { layer ->
@@ -134,7 +125,7 @@ if (splitEnvironment) {
     sourceSets {
         main {
             java.srcDir "src/client/java"
-            if (!early114115) {
+            if (!(early114115 || early116)) {
                 java.srcDir new File(sharedRoot, "common/src/client/java")
             }
             layers.each { layer ->
@@ -150,9 +141,7 @@ processResources {
             "minecraftVersion": gameVersion,
             "loaderVersion": project.ext.legacyLoaderVersion,
             "javaVersion": project.ext.legacyJavaRelease,
-            "fabricDependency": project.ext.legacyFabricDependency,
-            "modmenuEntrypoint": modmenuEntrypoint,
-            "modmenuSuggests": modmenuSuggests
+            "fabricDependency": project.ext.legacyFabricDependency
     )
     filesMatching("fabric.mod.json") {
         expand(
@@ -160,9 +149,7 @@ processResources {
                 "minecraftVersion": gameVersion,
                 "loaderVersion": project.ext.legacyLoaderVersion,
                 "javaVersion": project.ext.legacyJavaRelease,
-                "fabricDependency": project.ext.legacyFabricDependency,
-                "modmenuEntrypoint": modmenuEntrypoint,
-                "modmenuSuggests": modmenuSuggests
+                "fabricDependency": project.ext.legacyFabricDependency
         )
     }
 }
@@ -203,8 +190,3 @@ tasks.register("verifyBuiltJar", Exec) {
 tasks.named("build").configure {
     dependsOn tasks.named("verifyBuiltJar")
 }
-
-ext.modmenuEnabled = hasModMenu
-ext.modmenuApiFamily = "yarn"
-ext.modmenuClientSourceSet = splitEnvironment ? "client" : "main"
-apply from: rootProject.file("platforms/fabric/modmenu/modmenu.gradle")

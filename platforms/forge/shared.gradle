@@ -28,14 +28,7 @@ minecraft {
                 jvmArgs "-XstartOnFirstThread"
             }
         }
-        register("client") {
-            // Explicitly join the compiled classes and processed resources into one
-            // development mod. Forge 61 otherwise discovers mods.toml as a resources-only
-            // mod file and cannot see the @Mod class from our shared source directories.
-            mods.create("universal_translator") {
-                source(sourceSets.main)
-            }
-        }
+        register("client")
     }
 }
 
@@ -60,13 +53,6 @@ sourceSets {
     main {
         resources.srcDir new File(globalSharedRoot, "common/src/main/resources")
     }
-}
-
-// Forge 61 and newer treat Java classes and processed resources as independent
-// userdev mod roots unless both outputs share a directory. Keep mods.toml beside
-// the @Mod class, matching the layout of the published JAR.
-if ((project.ext.forgeLoaderMajor as String).toInteger() >= 61) {
-    sourceSets.main.output.resourcesDir = sourceSets.main.java.classesDirectory.get().asFile
 }
 
 tasks.named("processResources", ProcessResources).configure {

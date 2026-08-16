@@ -87,7 +87,10 @@ public final class UniversalTranslatorNeoForgeClient {
                         Component.translatable("message.universal_translator.join_hint"));
             }
             while (RELOAD_SETTINGS.consumeClick()) {
-                openSettings(client);
+                loadConfig();
+                client.gui.getChat().addMessage(Component.translatable(
+                        "message.universal_translator.settings_reloaded",
+                        FMLPaths.CONFIGDIR.get().resolve("universal-translator.properties")));
             }
             while (TOGGLE_TRANSLATION.consumeClick()) {
                 toggle(client);
@@ -108,17 +111,6 @@ public final class UniversalTranslatorNeoForgeClient {
                     false);
             ForgeTranslationRuntime.translateOutgoing(message).whenComplete((result, error) ->
                     client.execute(() -> sendCompletedMessage(client, message, result, error)));
-        }
-    }
-
-    private static void openSettings(Minecraft client) {
-        try {
-            ForgeConfig config = ForgeConfig.load(FMLPaths.CONFIGDIR.get());
-            client.setScreen(new UniversalTranslatorConfigScreen(client.screen, config));
-        } catch (Exception exception) {
-            UniversalTranslatorNeoForgeMod.LOGGER.error("Could not open MC Auto Translation Tool settings", exception);
-            client.gui.setOverlayMessage(
-                    Component.translatable("message.universal_translator.settings_open_failed"), false);
         }
     }
 

@@ -74,15 +74,12 @@ jobs:
             "MCAutoTranslationTool-$version-mc1.12.2-forge.jar"
             "MCAutoTranslationTool-$version-mc1.16.5-fabric.jar"
             "MCAutoTranslationTool-$version-mc1.16.5-forge.jar"
-            "MCAutoTranslationTool-$version-mc1.17-1.18.x-fabric.jar"
-            "MCAutoTranslationTool-$version-mc1.19.x-fabric.jar"
+            "MCAutoTranslationTool-$version-mc1.19.2-fabric.jar"
             "MCAutoTranslationTool-$version-mc1.19.2-forge.jar"
-            "MCAutoTranslationTool-$version-mc1.20.x-fabric.jar"
+            "MCAutoTranslationTool-$version-mc1.20.1-fabric.jar"
             "MCAutoTranslationTool-$version-mc1.20.1-forge.jar"
             "MCAutoTranslationTool-$version-mc1.20.1-neoforge.jar"
             "MCAutoTranslationTool-$version-mc1.21.1-neoforge.jar"
-            "MCAutoTranslationTool-$version-mc1.21.3-neoforge.jar"
-            "MCAutoTranslationTool-$version-mc1.21.11-neoforge.jar"
             "MCAutoTranslationTool-$version-mc1.21.x-fabric.jar"
             "MCAutoTranslationTool-$version-mc1.21-forge.jar"
             "MCAutoTranslationTool-$version-mc1.21.1-forge.jar"
@@ -161,8 +158,8 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t assets < <(find "$ASSET_DIR" -maxdepth 1 -type f \( -name '*.jar' -o -name 'SHA256SUMS.txt' \) -print | sort)
-          if [[ "${#assets[@]}" -ne 16 ]]; then
-            echo "Expected fifteen compatible JARs and SHA256SUMS.txt" >&2
+          if [[ "${#assets[@]}" -ne 14 ]]; then
+            echo "Expected thirteen compatible JARs and SHA256SUMS.txt" >&2
             exit 1
           fi
           notes="$RUNNER_TEMP/release-notes.md"
@@ -195,4 +192,7 @@ jobs:
               release_flags+=(--latest)
             fi
             gh release create "$TAG" "${assets[@]}" "${release_flags[@]}"
+          fi
+          if [[ "${{ steps.version.outputs.prerelease }}" == "false" ]]; then
+            gh release edit "$TAG" --latest
           fi

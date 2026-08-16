@@ -198,8 +198,6 @@ public final class LlamaCppOfflineProvider
         int port = reserveLoopbackPort();
         Path log = root.resolve("llama-server.log");
         long logStart = Files.isRegularFile(log) ? Files.size(log) : 0L;
-        Path nativeModel = OfflineProcessSupport.prepareModelPathForNativeProcess(
-                model, modelSha256);
         int processors = Runtime.getRuntime().availableProcessors();
         // The model shares the machine with Minecraft's render thread. Two inference
         // threads are enough for this small model and avoid sustained frame drops on
@@ -208,7 +206,7 @@ public final class LlamaCppOfflineProvider
         status = "正在启动离线模型";
         List<String> command = new ArrayList<String>(Arrays.asList(
                 server.toString(),
-                "-m", nativeModel.toString(),
+                "-m", model.toString(),
                 "--host", "127.0.0.1",
                 "--port", Integer.toString(port),
                 "--alias", "universal-translator-local",
@@ -249,7 +247,7 @@ public final class LlamaCppOfflineProvider
     private Path ensureEngine() throws IOException {
         OfflineEngineAsset asset = OfflineEngineAsset.current();
         Path engineRoot = engineRoot(asset);
-        Path installed = engineInstallDirectory(asset);
+        Path installed = engineRoot.resolve("installed");
         if (Files.isDirectory(installed)) {
             try {
                 return SafeArchiveExtractor.findServer(installed);
@@ -265,14 +263,14 @@ public final class LlamaCppOfflineProvider
         VerifiedDownloader.download(asset.downloadSources(), archive, asset.size, asset.sha256,
                 progressListener("正在下载离线引擎"));
         status = "离线引擎下载并校验完成";
-        Path staging = installed.resolveSibling("installing");
+        Path staging = engineRoot.resolve("installing");
         deleteTree(staging);
         Files.createDirectories(staging);
         status = "正在安装离线引擎";
         try {
             SafeArchiveExtractor.extract(archive, staging);
             SafeArchiveExtractor.findServer(staging);
-            Files.createDirectories(installed.getParent());
+            Files.createDirectories(engineRoot);
             try {
                 Files.move(staging, installed, StandardCopyOption.ATOMIC_MOVE);
             } catch (IOException atomicMoveUnsupported) {
@@ -285,16 +283,8 @@ public final class LlamaCppOfflineProvider
         return SafeArchiveExtractor.findServer(installed);
     }
 
-    private Path engineInstallDirectory() throws IOException {
-        return engineInstallDirectory(OfflineEngineAsset.current());
-    }
-
-    private Path engineInstallDirectory(OfflineEngineAsset asset) throws IOException {
-        if (asset.platformId.startsWith("android-")) {
-            return OfflineProcessSupport.androidEngineInstallDirectory(
-                    root, "b9637-" + asset.platformId).resolve("installed");
-        }
-        return engineRoot(asset).resolve("installed");
+    private Path engineInstallDirectory() {
+        return engineRoot(OfflineEngineAsset.current()).resolve("installed");
     }
 
     private Path engineRoot(OfflineEngineAsset asset) {
@@ -421,10 +411,7 @@ public final class LlamaCppOfflineProvider
     @Override
     public synchronized void close() {
         localApi = null;
-        Process child = detachProcess(true);
-        if (child != null) {
-            stopProcessInBackground(child);
-        }
+        closeProcess();
         status = "离线模型已停止";
     }
 
@@ -441,7 +428,7 @@ public final class LlamaCppOfflineProvider
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             shutdownHook = hook;
-        } catch (IllegalStateException | SecurityException shuttingDown) {
+        } catch (IllegalStateException shuttingDown) {
             // The JVM is already stopping. Do not allow a newly-started model
             // process to survive after Minecraft exits.
             closeProcess(false);
@@ -454,47 +441,20 @@ public final class LlamaCppOfflineProvider
 
     private synchronized void closeProcess(boolean unregisterHook) {
         localApi = null;
-        Process child = detachProcess(unregisterHook);
-        if (child != null) {
-            stopProcess(child);
-        }
-    }
-
-    private Process detachProcess(boolean unregisterHook) {
         Thread hook = shutdownHook;
         shutdownHook = null;
         if (unregisterHook && hook != null && hook != Thread.currentThread()) {
             try {
                 Runtime.getRuntime().removeShutdownHook(hook);
-            } catch (IllegalStateException | SecurityException ignored) {
+            } catch (IllegalStateException ignored) {
                 // JVM shutdown has already started; the hook may be running.
             }
         }
         Process child = process;
         process = null;
-        return child;
-    }
-
-    private static void stopProcessInBackground(final Process child) {
-        child.destroy();
-        if (!child.isAlive()) {
+        if (child == null) {
             return;
         }
-        Thread reaper = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                stopProcess(child);
-            }
-        }, "universal-translator-offline-process-reaper");
-        try {
-            reaper.setDaemon(true);
-            reaper.start();
-        } catch (RuntimeException unableToStartReaper) {
-            child.destroyForcibly();
-        }
-    }
-
-    private static void stopProcess(Process child) {
         child.destroy();
         try {
             if (!child.waitFor(2L, TimeUnit.SECONDS)) {

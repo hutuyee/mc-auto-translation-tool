@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "MC 自动翻译工具｜1.3.4 正式版",
+  title: "MC 自动翻译工具｜1.3.3 正式版",
   description:
-    "MC 自动翻译工具 1.3.4 正式版，修复设置保存、离线进程关闭和多个 Fabric 版本启动问题，并扩展 NeoForge 下载。",
+    "MC 自动翻译工具 1.3.3 正式版，提供 Fabric、Forge 与 NeoForge 下载，新增翻译关键词屏蔽、玩家名称翻译开关，并支持多种可配置翻译 API。",
 };
 
 const features = [
@@ -31,15 +31,15 @@ const features = [
 
 const versions = [
   ["1.8.9、1.12.2", "Forge", "正式版已发布", "ready"],
-  ["1.16–1.20.6", "Fabric（按已实现版本）", "正式版已发布", "ready"],
+  ["1.16.5、1.19.2", "Fabric / Forge", "正式版已发布", "ready"],
   ["1.20.1", "Fabric / Forge / NeoForge", "正式版已发布", "ready"],
   ["1.21–1.21.11", "Fabric 单一 JAR", "正式版已发布", "ready"],
   ["1.21、1.21.1、1.21.3–1.21.11", "Forge 兼容族群 JAR", "正式版已发布", "ready"],
-  ["1.21.1、1.21.3、1.21.11", "NeoForge", "正式版已发布", "ready"],
+  ["1.21.1", "NeoForge", "正式版已发布", "ready"],
   ["26.1–26.2", "Fabric 单一 JAR / Forge 兼容族群", "正式版已发布", "ready"],
 ];
 
-const releaseVersion = "1.3.4";
+const releaseVersion = "1.3.3";
 const githubDownloadBase =
   `https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v${releaseVersion}`;
 
@@ -84,7 +84,7 @@ const downloads = [
     file: releaseFile("1.20.1-neoforge"),
   },
   {
-    version: "1.16–1.20.6 / 1.21.x / 26.x",
+    version: "1.16.5 / 1.19.2 / 1.20.1 / 1.21.x / 26.x",
     loader: "Fabric 全版本单一 JAR",
     java: "按 Minecraft 版本",
     file: `MCAutoTranslationTool-${releaseVersion}-fabric-all.jar`,
@@ -101,12 +101,6 @@ const downloads = [
     java: "Java 21",
     file: releaseFile("1.21.1-neoforge"),
   },
-  ...["1.21.3", "1.21.11"].map((version) => ({
-    version,
-    loader: "NeoForge",
-    java: "Java 21",
-    file: releaseFile(`${version}-neoforge`),
-  })),
   ...["26.1-26.1.2", "26.2"].map((version) => ({
     version: version.replaceAll("-", "–"),
     loader: "Forge 兼容族群",
@@ -148,7 +142,7 @@ export default function Home() {
             自动处理聊天、记分板、箱子，以及模组和整合包界面里的英文内容。
           </p>
           <div className="heroActions">
-            <a className="primaryButton" href="#download">下载 1.3.4 正式版 <span>→</span></a>
+            <a className="primaryButton" href="#download">下载 1.3.3 正式版 <span>→</span></a>
             <a className="textButton" href="#how">查看安装方法</a>
           </div>
           <div className="trustLine">
@@ -258,7 +252,7 @@ export default function Home() {
           </div>
           <div className="steps">
             <article><b>1</b><h3>选择对应版本</h3><p>下载与你的 Minecraft 版本及 Forge、Fabric 或 NeoForge 加载器匹配的 JAR。</p></article>
-            <article><b>2</b><h3>放入 mods 文件夹</h3><p>不要改名或解压。Fabric、现代 Forge 与 NeoForge 均可按 U 打开设置。</p></article>
+            <article><b>2</b><h3>放入 mods 文件夹</h3><p>不要改名或解压。Fabric 按 U 打开设置；现代 Forge 按 U 重新载入配置文件。</p></article>
             <article><b>3</b><h3>等待离线模型就绪</h3><p>默认优先国内镜像下载并校验文件；完成后即可在服务器中自动翻译。</p></article>
           </div>
         </div>
@@ -266,9 +260,9 @@ export default function Home() {
 
       <section className="downloadSection shell" id="download">
         <div className="downloadIntro">
-          <span className="sectionKicker light">1.3.4 正式版</span>
+          <span className="sectionKicker light">1.3.3 正式版</span>
           <h2>免费使用，也欢迎一起把它做得更好。</h2>
-          <p>本次提供 15 个经过校验的 JAR，覆盖 Fabric、Forge 与 NeoForge 的已验证目标；修复小尺寸窗口的保存按钮、多个 Fabric 启动崩溃和离线引擎关闭卡顿，并保留关键词屏蔽、玩家名称翻译、多种在线翻译与自定义 API。请选择与你的 Minecraft 版本及加载器完全对应的文件，切勿跨加载器混用。</p>
+          <p>本次提供 13 个经过校验的 JAR，覆盖 Fabric、Forge 与 NeoForge 的已验证目标；新增关键词屏蔽和玩家名称翻译开关，并保留多种在线翻译与自定义 API。请选择与你的 Minecraft 版本及加载器完全对应的文件，切勿跨加载器混用。</p>
         </div>
         <div className="downloadGrid">
           {downloads.map((item) => (

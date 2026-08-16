@@ -24,7 +24,6 @@ chat, quest books, mod menus, scoreboards, item descriptions, and signs.
 | Multiple providers | Built-in Chinese MT and LLM services, plus LibreTranslate, OpenAI-compatible, and custom HTTP JSON APIs |
 | Responsive and resilient | Translation runs in the background; unfinished requests and service failures keep the original text without blocking rendering |
 | Privacy protection | Player names are separated locally by default and can be translated only when explicitly enabled; server addresses, URLs, numbers, and formatting codes remain protected |
-| Blocked keywords | Custom skip-translation keywords; matching text stays original and is never sent to the offline model or an online API |
 | Local cache | Coalesces identical requests and caches translations to reduce latency and remote-service costs |
 | Optional outgoing translation | Can translate normal chat and send it in order; this is off by default and commands always remain unchanged |
 
@@ -33,46 +32,36 @@ chat, quest books, mod menus, scoreboards, item descriptions, and signs.
 1. Check the **Minecraft version, mod loader, and Java version** used by the game instance.
 2. Open the [latest release](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/latest) and select a JAR from the table below.
 3. Put the JAR in that instance's `mods` folder. Fabric also requires the matching version of Fabric API.
-4. Start the game. Press `F8` to toggle automatic translation; press `U` to open settings. If Mod Menu is installed, the same settings screen is also available from the mods list.
+4. Start the game. Press `F8` to toggle automatic translation; press `U` to open settings or reload the configuration.
 5. For a first run, choose **Offline** and **Translated only**. See the [installation and usage guide](USER_GUIDE.md) for details.
 
-Fabric, Forge, and NeoForge all open the graphical settings with `U`, including blocked keywords
-and the player-name switch. Fabric instances with Mod Menu can also open that same screen from
-the mods list. Tencent credentials and other advanced provider keys can still be
-edited in `config/universal-translator.properties`.
+The settings entry point differs slightly between Forge versions. When manual configuration is required,
+edit `config/universal-translator.properties` in the game instance, save it, and press `U` to reload.
 
 ## Downloads and version selection
 
-The stable release turns 30 release build artifacts into **15 directly installable JARs**. Fabric uses
+The stable release turns 27 exact-version build artifacts into **13 directly installable JARs**. Fabric uses
 one all-version JAR whose embedded implementation is selected by Loader. Forge shares a JAR only between
 adjacent versions with verified compatibility.
-The source tree also contains Ornithe legacy bundles and early Fabric targets without a complete translation
-pipeline. Those targets are not packed into the current GitHub stable download; do not use the v1.3.4
-`fabric-all` JAR on a game version that is not
-listed as included.
 
-The table links directly to every JAR in the current stable release and lists source-validated
-targets that are not yet shipped with v1.3.4. These links are updated with the README whenever a
-new stable version is published:
+The table links directly to every JAR in the current stable release. These links are updated with the
+README whenever a new stable version is published:
 
 | Minecraft | Loader | Java | Download |
 | --- | --- | ---: | --- |
-| 1.16–1.16.5, 1.17–1.18.2, 1.19–1.19.4, 1.20–1.20.6, 1.21–1.21.11, 26.1–26.2 | Fabric | 8 / 17 / 21 / 25 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-fabric-all.jar) |
-| 1.0.0–1.15.2 | Fabric / Ornithe | 8 | Not shipped in v1.3.4 |
-| 1.8.9 | Forge | 8 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.8.9-forge.jar) |
-| 1.12.2 | Forge | 8 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.12.2-forge.jar) |
-| 1.16.5 | Forge | 8 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.16.5-forge.jar) |
-| 1.19.2 | Forge | 17 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.19.2-forge.jar) |
-| 1.20.1 | Forge | 17 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.20.1-forge.jar) |
-| 1.21, 1.21.1, 1.21.3–1.21.5 | Forge | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.21-1.21.5-forge.jar) |
-| 1.21.6–1.21.8 | Forge | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.21.6-1.21.8-forge.jar) |
-| 1.21.9–1.21.11 | Forge | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.21.9-1.21.11-forge.jar) |
-| 26.1–26.1.2 | Forge | 25 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc26.1-26.1.2-forge.jar) |
-| 26.2 | Forge | 25 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc26.2-forge.jar) |
-| 1.20.1 | NeoForge 47.1.106–47.1.x | 17 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.20.1-neoforge.jar) |
-| 1.21.1 | NeoForge 21.1.248 | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.21.1-neoforge.jar) |
-| 1.21.3 | NeoForge 21.3.97 | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.21.3-neoforge.jar) |
-| 1.21.11 | NeoForge 21.11.45 | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.4/MCAutoTranslationTool-1.3.4-mc1.21.11-neoforge.jar) |
+| 1.16.5, 1.19.2, 1.20.1, 1.21–1.21.11, 26.1–26.2 | Fabric | 8 / 17 / 21 / 25 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-fabric-all.jar) |
+| 1.8.9 | Forge | 8 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.8.9-forge.jar) |
+| 1.12.2 | Forge | 8 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.12.2-forge.jar) |
+| 1.16.5 | Forge | 8 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.16.5-forge.jar) |
+| 1.19.2 | Forge | 17 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.19.2-forge.jar) |
+| 1.20.1 | Forge | 17 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.20.1-forge.jar) |
+| 1.21, 1.21.1, 1.21.3–1.21.5 | Forge | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.21-1.21.5-forge.jar) |
+| 1.21.6–1.21.8 | Forge | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.21.6-1.21.8-forge.jar) |
+| 1.21.9–1.21.11 | Forge | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.21.9-1.21.11-forge.jar) |
+| 26.1–26.1.2 | Forge | 25 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc26.1-26.1.2-forge.jar) |
+| 26.2 | Forge | 25 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc26.2-forge.jar) |
+| 1.20.1 | NeoForge 47.1.106–47.1.x | 17 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.20.1-neoforge.jar) |
+| 1.21.1 | NeoForge 21.1.248 | 21 | [Download JAR](https://github.com/wuxiangdan96-byte/mc-auto-translation-tool/releases/download/v1.3.3/MCAutoTranslationTool-1.3.3-mc1.21.1-neoforge.jar) |
 
 > **Do not mix loaders or use a JAR outside the range in its filename.** Adjacent Minecraft releases may
 > change rendering APIs and Mixin targets. Release metadata includes only versions that completed validation.
@@ -99,7 +88,6 @@ new stable version is published:
 - API keys are stored only in the current game instance's configuration file. Remote endpoints must use HTTPS.
 - Chat content, other interfaces, and player-initiated outgoing translation can be disabled separately. Outgoing translation is off by default.
 - Cache keys use SHA-256; original text is not written to the cache file in plaintext.
-- Blocked keywords keep matching text on the local computer; it is never sent to a translation service.
 
 See [online API configuration](ONLINE_APIS.md) for built-in services and custom requests, and the
 [installation and usage guide](USER_GUIDE.md) for other settings, model downloads, and troubleshooting.

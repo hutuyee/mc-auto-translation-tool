@@ -5,18 +5,7 @@
 This document records only completed validation. “Builds successfully” is not reported as
 “compatible.”
 
-## Offline runtime and interface fixes added in 1.3.4
-
-- When a Windows game directory contains Chinese or other non-ASCII characters, the verified GGUF
-  model is exposed to the native engine through a same-volume hard link, with a one-time compatibility
-  copy fallback, so llama.cpp does not receive a mojibake model path.
-- Android ARM64 Java launchers are no longer mistaken for Ubuntu ARM64. They select the checksum-pinned
-  official Android ARM64 build from the same llama.cpp release, and install the executable engine in
-  private app storage instead of a shared-storage `noexec` mount.
-- Path handling, platform selection, and native library lookup are covered by the shared core tests.
-  Full Android in-game results still depend on launcher permissions, Android version, and available RAM.
-
-## Version 1.3.4 release validation
+## Version 1.3.3 release validation
 
 | Minecraft | Loader | Java | Build and self-test | Launched to main menu | Full manual in-server regression |
 | --- | --- | --- | --- | --- | --- |
@@ -37,19 +26,20 @@ This document records only completed validation. “Builds successfully” is no
 | 1.21.1 | NeoForge 21.1.248 | 21 | Passed; metadata and Mixins checked | Pending | Pending |
 | 1.21.11 | Fabric Loader 0.18.1 + Fabric API 0.141.4 | 21 | Passed | Historical baseline passed | Pending confirmation |
 | All 1.21 releases (1.21–1.21.11), single JAR | Fabric Loader 0.19.3 | 21 | Passed; Loader selection passed for all twelve versions | Pending | Pending |
-| 1.21, 1.21.1, 1.21.3–1.21.11 | Forge 51.0.33–61.2.0 | 21 | Compile passed for every published game target; exact metadata ranges | 1.21.11 client initialized and reloaded resources, audio, and atlases | Pending |
+| 1.21, 1.21.1, 1.21.3–1.21.11 | Forge 51.0.33–61.2.0 | 21 | Compile passed for every published game target; exact metadata ranges | 1.21.11 blocked by headless display | Pending |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Forge 62.0.9–65.1.1 | 25 | Compile passed for all four exact targets | Pending | Pending |
 | 26.1, 26.1.1, 26.1.2, 26.2, single JAR | Fabric Loader 0.19.3 | 25 | Passed; Loader selection passed for all four versions | 26.1 baseline passed | Pending |
 
-The stable release starts from 30 formally shipped target JARs that share the same translation core
-and reduces them to 15 directly installable release JARs. Additional adjacent-version source targets
+The stable release starts from 27 formally shipped target JARs that share the same translation core
+and reduces them to 13 directly installable release JARs. Additional adjacent-version source targets
 are build-tested separately and are not counted as stable downloads. Fabric 1.20.1 completed Loom remapping.
 The Forge 1.20.1 artifact was renamed into the SRG runtime namespace and contains a refmap for all
 nine Mixin classes. Forge 1.21.11 was adapted to the Forge 7 event bus and Mojmap runtime. Its
-development client initialized the 1.3.4 mod and completed resource, audio, and atlas reload before
-the automated session was stopped; a full manual in-server regression remains pending.
+startup passed ForgeBootstrap and reached GLFW graphics initialization, then stopped because the
+automation environment exposes no primary monitor. That is not a mod failure, but it is not
+reported as a successful main-menu launch either.
 
-The 1.3.4 provider factory, custom JSON templates, nested response paths, signing digests, endpoint
+The 1.3.3 provider factory, custom JSON templates, nested response paths, signing digests, endpoint
 and header safety, bounded retries, and configuration migration passed core tests without real keys or
 external traffic. End-to-end provider calls still require a user's own account, quota, and region, so
 this table does not describe local protocol tests as successful calls to paid APIs.

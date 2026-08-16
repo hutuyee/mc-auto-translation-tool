@@ -94,7 +94,3 @@ jar {
         rename { "THIRD_PARTY_OFFLINE.md" }
     }
 }
-
-ext.modmenuApiFamily = "mojmap"
-ext.modmenuClientSourceSet = "client"
-apply from: rootProject.file("platforms/fabric/modmenu/modmenu.gradle")

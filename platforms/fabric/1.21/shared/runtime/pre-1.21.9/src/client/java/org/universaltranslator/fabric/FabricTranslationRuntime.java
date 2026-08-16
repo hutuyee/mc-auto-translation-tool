@@ -15,7 +15,6 @@ import org.universaltranslator.core.TranslationStore;
 import org.universaltranslator.core.TranslationTextColor;
 import org.universaltranslator.core.RecentUserText;
 import org.universaltranslator.core.TranslationResult;
-import org.universaltranslator.core.DiagnosticsLogExporter;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -170,16 +169,6 @@ public final class FabricTranslationRuntime {
                 fileSize(modelFile),
                 fileSize(config.cacheFile),
                 status());
-    }
-
-    static Path exportDiagnostics(List<String> localizedLines) throws IOException {
-        FabricConfig config = activeConfig;
-        if (config == null) {
-            throw new IOException("Settings have not been loaded");
-        }
-        return DiagnosticsLogExporter.export(
-                config.offlineDirectory.getParent().resolve("universal-translator-diagnostics"),
-                localizedLines);
     }
 
     private static long fileSize(Path file) {

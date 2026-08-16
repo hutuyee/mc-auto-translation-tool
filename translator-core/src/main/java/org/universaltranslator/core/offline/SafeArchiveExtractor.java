@@ -19,9 +19,6 @@ import java.util.zip.ZipInputStream;
 
 /** Minimal ZIP and tar.gz extractor with traversal and symlink-target validation. */
 public final class SafeArchiveExtractor {
-    private static final int MAX_ENTRIES = 10_000;
-    private static final long MAX_EXPANDED_BYTES = 1_073_741_824L;
-
     private SafeArchiveExtractor() {
     }
 
@@ -38,18 +35,16 @@ public final class SafeArchiveExtractor {
     }
 
     private static void extractZip(Path archive, Path root) throws IOException {
-        ExtractionBudget budget = new ExtractionBudget();
         try (ZipInputStream input = new ZipInputStream(
                 new BufferedInputStream(Files.newInputStream(archive)))) {
             ZipEntry entry;
             while ((entry = input.getNextEntry()) != null) {
-                budget.addEntry();
                 Path output = safePath(root, entry.getName());
                 if (entry.isDirectory()) {
                     Files.createDirectories(output);
                 } else {
                     Files.createDirectories(output.getParent());
-                    copy(input, output, entry.getSize(), budget);
+                    copy(input, output, entry.getSize());
                 }
                 input.closeEntry();
             }
@@ -58,7 +53,6 @@ public final class SafeArchiveExtractor {
 
     private static void extractTarGz(Path archive, Path root) throws IOException {
         List<PendingLink> links = new ArrayList<PendingLink>();
-        ExtractionBudget budget = new ExtractionBudget();
         try (InputStream input = new GZIPInputStream(
                 new BufferedInputStream(Files.newInputStream(archive)))) {
             byte[] header = new byte[512];
@@ -72,8 +66,6 @@ public final class SafeArchiveExtractor {
                     name = prefix + "/" + name;
                 }
                 long size = tarOctal(header, 124, 12);
-                budget.addEntry();
-                budget.reserve(size);
                 int type = header[156] & 0xff;
                 Path output = safePath(root, name);
                 if (type == '5') {
@@ -95,7 +87,7 @@ public final class SafeArchiveExtractor {
             }
         }
         for (PendingLink link : links) {
-            createLinkOrCopy(root, link, budget);
+            createLinkOrCopy(root, link);
         }
     }
 
@@ -114,8 +106,7 @@ public final class SafeArchiveExtractor {
         }
     }
 
-    private static void createLinkOrCopy(
-            Path root, PendingLink link, ExtractionBudget budget) throws IOException {
+    private static void createLinkOrCopy(Path root, PendingLink link) throws IOException {
         Files.createDirectories(link.output.getParent());
         Path target = link.output.getParent().resolve(link.target).normalize();
         if (!target.startsWith(root.toAbsolutePath().normalize())) {
@@ -127,10 +118,6 @@ public final class SafeArchiveExtractor {
             if (!Files.isRegularFile(target)) {
                 throw new IOException("Could not safely materialize archive symlink", exception);
             }
-            // Windows commonly denies symlink creation without developer mode or elevated
-            // privileges. Its safe copy fallback still expands data and must share the same
-            // anti-archive-bomb budget as ordinary entries.
-            budget.reserve(Files.size(target));
             Files.copy(target, link.output, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
     }
@@ -154,9 +141,7 @@ public final class SafeArchiveExtractor {
         return output;
     }
 
-    private static void copy(
-            InputStream input, Path output, long declaredSize, ExtractionBudget budget)
-            throws IOException {
+    private static void copy(InputStream input, Path output, long declaredSize) throws IOException {
         try (OutputStream target = Files.newOutputStream(output)) {
             byte[] buffer = new byte[64 * 1024];
             long total = 0L;
@@ -166,7 +151,6 @@ public final class SafeArchiveExtractor {
                 if (declaredSize >= 0L && total > declaredSize) {
                     throw new IOException("ZIP entry exceeded its declared size");
                 }
-                budget.consume(count);
                 target.write(buffer, 0, count);
             }
         }
@@ -264,29 +248,6 @@ public final class SafeArchiveExtractor {
         private PendingLink(Path output, String target) {
             this.output = output;
             this.target = target;
-        }
-    }
-
-    private static final class ExtractionBudget {
-        private int entries;
-        private long expandedBytes;
-
-        private void addEntry() throws IOException {
-            entries++;
-            if (entries > MAX_ENTRIES) {
-                throw new IOException("Archive contains too many entries");
-            }
-        }
-
-        private void reserve(long bytes) throws IOException {
-            if (bytes < 0L || bytes > MAX_EXPANDED_BYTES - expandedBytes) {
-                throw new IOException("Archive exceeds the expanded size limit");
-            }
-            expandedBytes += bytes;
-        }
-
-        private void consume(long bytes) throws IOException {
-            reserve(bytes);
         }
     }
 }
