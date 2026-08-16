@@ -14,6 +14,7 @@ import org.universaltranslator.core.TranslationStatusLocalizer;
 import org.universaltranslator.core.TranslationTextColor;
 import org.universaltranslator.core.TranslationProviderCatalog;
 import org.universaltranslator.core.SettingsUiAnimation;
+import org.universaltranslator.core.SettingsScreenLayout;
 import org.universaltranslator.core.SettingsSelectionList;
 
 /** Dependency-free settings UI shared by Forge 1.8.9 and 1.12.2. */
@@ -323,8 +324,8 @@ final class LegacyConfigScreen extends GuiScreen {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        if (openSelection != SettingsSelectionList.Kind.NONE) {
-            selectFromList(mouseX, mouseY);
+        if (openSelection != SettingsSelectionList.Kind.NONE
+                && selectFromList(mouseX, mouseY)) {
             return;
         }
         super.mouseClicked(mouseX, mouseY, mouseButton);
@@ -430,7 +431,7 @@ final class LegacyConfigScreen extends GuiScreen {
         }
     }
 
-    private void selectFromList(double mouseX, double mouseY) {
+    private boolean selectFromList(double mouseX, double mouseY) {
         String[] values = SettingsSelectionList.values(openSelection);
         SettingsSelectionList.Layout list = SettingsSelectionList.layout(width, height, values.length);
         int selected = list.optionAt(mouseX, mouseY, values.length);
@@ -440,9 +441,12 @@ final class LegacyConfigScreen extends GuiScreen {
             else outgoingTargetLanguage = values[selected];
             openSelection = SettingsSelectionList.Kind.NONE;
             refreshLabels();
+            return true;
         } else if (!list.contains(mouseX, mouseY)) {
             openSelection = SettingsSelectionList.Kind.NONE;
+            return false;
         }
+        return true;
     }
 
     private String selectionValue() {
@@ -502,17 +506,9 @@ final class LegacyConfigScreen extends GuiScreen {
     }
 
     private Layout layout() {
-        int totalWidth = Math.max(180, Math.min(310, width - 20));
-        int gap = 8;
-        int buttonWidth = (totalWidth - gap) / 2;
-        int left = (width - totalWidth) / 2;
-        int top = Math.max(20, Math.min(44, 20 + Math.max(0, height - 220) / 4));
-        int rowStep = height >= 300 ? 26 : (height >= 260 ? 22 : 20);
-        int targetY = top + rowStep * 7 + 2;
-        int endpointY = targetY + (height >= 300 ? 32 : 28);
-        int saveY = height >= 330 ? 296 : Math.max(endpointY + 22, height - 24);
-        return new Layout(left, left + buttonWidth + gap, totalWidth, buttonWidth,
-                top, rowStep, targetY, endpointY, saveY);
+        SettingsScreenLayout.Geometry geometry = SettingsScreenLayout.calculate(width, height);
+        return new Layout(geometry.left(), geometry.right(), geometry.totalWidth(), geometry.buttonWidth(),
+                geometry.top(), geometry.rowStep(), geometry.targetY(), geometry.endpointY(), geometry.saveY());
     }
 
     private static final class Layout {

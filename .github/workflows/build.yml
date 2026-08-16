@@ -48,6 +48,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - target: fabric-1.16.x
+            java: "21"
+          - target: fabric-1.17-1.18.x
+            java: "21"
+          - target: fabric-1.19.x
+            java: "21"
+          - target: fabric-1.20.x
+            java: "21"
           - target: fabric-1.21.x
             java: "21"
           - target: fabric-1.21.4-1.21.5

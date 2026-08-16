@@ -67,6 +67,7 @@ public final class CoreSelfTest {
         preparesAsciiWindowsModelPath();
         animatesSettingsUiDeterministically();
         laysOutInPlaceSettingsLists();
+        keepsSettingsActionsReachable();
         exportsSecretFreeDiagnostics();
         reportsOfflineStartupDiagnostics();
         matchesTencentCloudOfficialSignatureVector();
@@ -297,6 +298,16 @@ public final class CoreSelfTest {
             output.closeEntry();
         }
         assertThrows(() -> SafeArchiveExtractor.extract(unsafeZip, directory.resolve("unsafe-output")));
+
+        Path excessiveEntriesZip = directory.resolve("excessive-entries.zip");
+        try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(excessiveEntriesZip))) {
+            for (int index = 0; index <= 10_000; index++) {
+                output.putNextEntry(new ZipEntry("entry-" + index + "/"));
+                output.closeEntry();
+            }
+        }
+        assertThrows(() -> SafeArchiveExtractor.extract(
+                excessiveEntriesZip, directory.resolve("excessive-entries-output")));
     }
 
     private static void writeTarEntry(OutputStream output, String name, byte[] data) throws Exception {
@@ -687,6 +698,21 @@ public final class CoreSelfTest {
         assertEquals(-1, layout.optionAt(0, 0, 16));
         assertTrue(layout.contains(layout.panelLeft(), layout.panelTop));
         assertFalse(layout.contains(0, 0));
+    }
+
+    private static void keepsSettingsActionsReachable() {
+        int[] widths = new int[] {160, 180, 320, 854};
+        int[] heights = new int[] {160, 180, 200, 220, 240, 360};
+        for (int width : widths) {
+            for (int height : heights) {
+                SettingsScreenLayout.Geometry layout = SettingsScreenLayout.calculate(width, height);
+                assertTrue(layout.left() >= 0);
+                assertTrue(layout.right() + layout.buttonWidth() <= width);
+                assertTrue(layout.saveY() >= 0);
+                assertTrue(layout.saveY() + SettingsScreenLayout.BUTTON_HEIGHT <= height);
+                assertTrue(layout.endpointY() + SettingsScreenLayout.BUTTON_HEIGHT <= layout.saveY());
+            }
+        }
     }
 
     private static void exportsSecretFreeDiagnostics() throws Exception {

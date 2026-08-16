@@ -274,15 +274,15 @@ python3 scripts/verify_release_jars.py path/to/mod.jar
 Forge 舊版執行階段映射、版本一致性、checksum 內容及覆蓋範圍。Fabric/Forge 1.16.5、
 1.19.2 與 1.20.1 的 `build` 任務也會驗證其產生的 JAR。
 
-發佈流程會將 27 個精確建置產物縮減為 13 個可直接安裝的 JAR：19 個 Fabric 實作會
+發佈流程會將 30 個發佈建置產物縮減為 15 個可直接安裝的 JAR：39 個 Fabric 實作會
 放進一個由 Loader 自動選版的 JAR；四組 Forge 版本在 payload 相容時擴寬範圍；
 Forge／NeoForge 1.20.1 保留為分別驗證的載入器專用 JAR。不同 API 仍維持獨立：
 
 ```bash
 python3 scripts/prepare_release_assets.py \
-  --release-dir downloads/1.3.3 \
+  --release-dir downloads/1.3.4 \
   --output-dir build/release-assets \
-  --version 1.3.3
+  --version 1.3.4
 ```
 
 ## 核心自我測試

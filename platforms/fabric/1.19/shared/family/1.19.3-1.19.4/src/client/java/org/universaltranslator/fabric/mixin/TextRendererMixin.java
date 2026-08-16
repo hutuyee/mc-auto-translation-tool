@@ -18,13 +18,6 @@ abstract class TextRendererMixin {
         return RenderedTextBridge.translate(text);
     }
 
-    @ModifyVariable(
-            method = "drawInternal",
-            at = @At("HEAD"), argsOnly = true)
-    private OrderedText universalTranslator$translatePreparedOrderedText(OrderedText text) {
-        return RenderedTextBridge.translate(text);
-    }
-
     @ModifyVariable(method = "getWidth(Ljava/lang/String;)I", at = @At("HEAD"), argsOnly = true)
     private String universalTranslator$translateMeasuredString(String text) {
         return RenderedTextBridge.translate(text);

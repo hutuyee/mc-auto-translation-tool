@@ -15,6 +15,7 @@ async function exists(path: string): Promise<boolean> {
 }
 
 // Packages Sites metadata and migrations after Vite finishes compiling.
+// This source deliberately lives outside build/, which Vinext clears.
 export function sites(): Plugin {
   let root = process.cwd();
 

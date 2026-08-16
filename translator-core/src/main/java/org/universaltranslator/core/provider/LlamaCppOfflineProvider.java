@@ -421,7 +421,10 @@ public final class LlamaCppOfflineProvider
     @Override
     public synchronized void close() {
         localApi = null;
-        closeProcess();
+        Process child = detachProcess(true);
+        if (child != null) {
+            stopProcessInBackground(child);
+        }
         status = "离线模型已停止";
     }
 
@@ -438,7 +441,7 @@ public final class LlamaCppOfflineProvider
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             shutdownHook = hook;
-        } catch (IllegalStateException shuttingDown) {
+        } catch (IllegalStateException | SecurityException shuttingDown) {
             // The JVM is already stopping. Do not allow a newly-started model
             // process to survive after Minecraft exits.
             closeProcess(false);
@@ -451,20 +454,47 @@ public final class LlamaCppOfflineProvider
 
     private synchronized void closeProcess(boolean unregisterHook) {
         localApi = null;
+        Process child = detachProcess(unregisterHook);
+        if (child != null) {
+            stopProcess(child);
+        }
+    }
+
+    private Process detachProcess(boolean unregisterHook) {
         Thread hook = shutdownHook;
         shutdownHook = null;
         if (unregisterHook && hook != null && hook != Thread.currentThread()) {
             try {
                 Runtime.getRuntime().removeShutdownHook(hook);
-            } catch (IllegalStateException ignored) {
+            } catch (IllegalStateException | SecurityException ignored) {
                 // JVM shutdown has already started; the hook may be running.
             }
         }
         Process child = process;
         process = null;
-        if (child == null) {
+        return child;
+    }
+
+    private static void stopProcessInBackground(final Process child) {
+        child.destroy();
+        if (!child.isAlive()) {
             return;
         }
+        Thread reaper = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                stopProcess(child);
+            }
+        }, "universal-translator-offline-process-reaper");
+        try {
+            reaper.setDaemon(true);
+            reaper.start();
+        } catch (RuntimeException unableToStartReaper) {
+            child.destroyForcibly();
+        }
+    }
+
+    private static void stopProcess(Process child) {
         child.destroy();
         try {
             if (!child.waitFor(2L, TimeUnit.SECONDS)) {
