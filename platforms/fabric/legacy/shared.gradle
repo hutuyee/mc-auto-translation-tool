@@ -122,7 +122,7 @@ if (splitEnvironment) {
 
     sourceSets {
         client {
-            if (!(early114115 || early116)) {
+            if (!early114115) {
                 java.srcDir new File(sharedRoot, "common/src/client/java")
             }
             layers.each { layer ->
@@ -134,7 +134,7 @@ if (splitEnvironment) {
     sourceSets {
         main {
             java.srcDir "src/client/java"
-            if (!(early114115 || early116)) {
+            if (!early114115) {
                 java.srcDir new File(sharedRoot, "common/src/client/java")
             }
             layers.each { layer ->
